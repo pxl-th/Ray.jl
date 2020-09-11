@@ -1,0 +1,212 @@
+# This file is machine-generated - editing it directly is not advised
+
+[[Base64]]
+uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+
+[[Dates]]
+deps = ["Printf"]
+uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
+
+[[GLFW]]
+deps = ["GLFW_jll"]
+git-tree-sha1 = "1d52b85c487f130df5b2ab21af35034bf3285916"
+uuid = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
+version = "3.4.0"
+
+[[GLFW_jll]]
+deps = ["Libdl", "Libglvnd_jll", "Pkg", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll"]
+git-tree-sha1 = "3b04f1dd73f0efa81298a76c9515f306df06f613"
+uuid = "0656b61e-2033-5cc2-a64a-77c0f6c09b89"
+version = "3.3.2+0"
+
+[[InteractiveUtils]]
+deps = ["Markdown"]
+uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+
+[[LibGit2]]
+deps = ["Printf"]
+uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
+
+[[Libdl]]
+uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+
+[[Libgcrypt_jll]]
+deps = ["Libdl", "Libgpg_error_jll", "Pkg"]
+git-tree-sha1 = "6b68e8b88e5eee917427a09d7bf15bd838576ba3"
+uuid = "d4300ac3-e22c-5743-9152-c294e39db1e4"
+version = "1.8.5+3"
+
+[[Libglvnd_jll]]
+deps = ["Libdl", "Pkg", "Xorg_libX11_jll", "Xorg_libXext_jll"]
+git-tree-sha1 = "30a990af9ce535bcba54d1f23f071a7e714f861e"
+uuid = "7e76a0d4-f3c7-5321-8279-8d96eeed0f29"
+version = "1.3.0+1"
+
+[[Libgpg_error_jll]]
+deps = ["Libdl", "Pkg"]
+git-tree-sha1 = "83b5c9df3a53a570c8fc2a0d7643a2e30a6a141c"
+uuid = "7add5ba3-2f88-524e-9cd5-f83b8a55f7b8"
+version = "1.36.0+2"
+
+[[Libiconv_jll]]
+deps = ["Libdl", "Pkg"]
+git-tree-sha1 = "7c36dfe7971e55da03d8f54b67d4b3fb8ee01d63"
+uuid = "94ce4f54-9a6c-5748-9c1c-f9c7231a4531"
+version = "1.16.0+6"
+
+[[Logging]]
+uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
+
+[[Markdown]]
+deps = ["Base64"]
+uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
+
+[[ModernGL]]
+deps = ["Libdl"]
+git-tree-sha1 = "326957556e9cc9253615114c04bb0096a2a69bb8"
+uuid = "66fc600b-dfda-50eb-8b99-91cfa97b1301"
+version = "1.1.2"
+
+[[OrderedCollections]]
+git-tree-sha1 = "293b70ac1780f9584c89268a6e2a560d938a7065"
+uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+version = "1.3.0"
+
+[[Parameters]]
+deps = ["OrderedCollections", "UnPack"]
+git-tree-sha1 = "38b2e970043613c187bd56a995fe2e551821eb4a"
+uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+version = "0.12.1"
+
+[[Pkg]]
+deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
+uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+
+[[Printf]]
+deps = ["Unicode"]
+uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[[REPL]]
+deps = ["InteractiveUtils", "Markdown", "Sockets"]
+uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
+
+[[Random]]
+deps = ["Serialization"]
+uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[[SHA]]
+uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+
+[[Serialization]]
+uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+
+[[Sockets]]
+uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
+
+[[UUIDs]]
+deps = ["Random", "SHA"]
+uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+
+[[UnPack]]
+git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
+uuid = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+version = "1.0.2"
+
+[[Unicode]]
+uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
+
+[[XML2_jll]]
+deps = ["Libdl", "Libiconv_jll", "Pkg", "Zlib_jll"]
+git-tree-sha1 = "ecff6bff03b35d482ad5eb51276d6fc4c823cd39"
+uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
+version = "2.9.10+2"
+
+[[XSLT_jll]]
+deps = ["Libdl", "Libgcrypt_jll", "Pkg", "XML2_jll"]
+git-tree-sha1 = "8bb981a5c4a7efc799250c46ef757cbfd6c5ba9b"
+uuid = "aed1982a-8fda-507f-9586-7b0439959a61"
+version = "1.1.33+3"
+
+[[Xorg_libX11_jll]]
+deps = ["Libdl", "Pkg", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
+git-tree-sha1 = "25ef1a3d04558407fc618797c1340d3703bacb94"
+uuid = "4f6342f7-b3d2-589e-9d20-edeb45f2b2bc"
+version = "1.6.9+3"
+
+[[Xorg_libXau_jll]]
+deps = ["Libdl", "Pkg"]
+git-tree-sha1 = "9284aed438cb747514ee02170f25c2f9cea91c00"
+uuid = "0c0b7dd1-d40b-584c-a123-a41640f87eec"
+version = "1.0.9+3"
+
+[[Xorg_libXcursor_jll]]
+deps = ["Libdl", "Pkg", "Xorg_libXfixes_jll", "Xorg_libXrender_jll"]
+git-tree-sha1 = "f9e26bb7fe6e1cd7b5fb0ffa959fa3b263723f94"
+uuid = "935fb764-8cf2-53bf-bb30-45bb1f8bf724"
+version = "1.2.0+3"
+
+[[Xorg_libXdmcp_jll]]
+deps = ["Libdl", "Pkg"]
+git-tree-sha1 = "95a233c8cf22e098be956a2fbed9db4ec02eadd0"
+uuid = "a3789734-cfe1-5b06-b2d0-1dd0d9d62d05"
+version = "1.1.3+3"
+
+[[Xorg_libXext_jll]]
+deps = ["Libdl", "Pkg", "Xorg_libX11_jll"]
+git-tree-sha1 = "d160f39dbee0faba7b65d62e8b3af4e508ec36b2"
+uuid = "1082639a-0dae-5f34-9b06-72781eeb8cb3"
+version = "1.3.4+3"
+
+[[Xorg_libXfixes_jll]]
+deps = ["Libdl", "Pkg", "Xorg_libX11_jll"]
+git-tree-sha1 = "c090cd1180e6b1d67541f161bf1eb7a5530d7ba0"
+uuid = "d091e8ba-531a-589c-9de9-94069b037ed8"
+version = "5.0.3+3"
+
+[[Xorg_libXi_jll]]
+deps = ["Libdl", "Pkg", "Xorg_libXext_jll", "Xorg_libXfixes_jll"]
+git-tree-sha1 = "33d931c90ea05cd9fdbbb40803070b404cc3d413"
+uuid = "a51aa0fd-4e3c-5386-b890-e753decda492"
+version = "1.7.10+3"
+
+[[Xorg_libXinerama_jll]]
+deps = ["Libdl", "Pkg", "Xorg_libXext_jll"]
+git-tree-sha1 = "df96a770b7e70ff0231ae0c28ef2bbdd24b6fbf3"
+uuid = "d1454406-59df-5ea1-beac-c340f2130bc3"
+version = "1.1.4+3"
+
+[[Xorg_libXrandr_jll]]
+deps = ["Libdl", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll"]
+git-tree-sha1 = "efac36579bc9241e831b43040df5d7cf723c4b97"
+uuid = "ec84b674-ba8e-5d96-8ba1-2a689ba10484"
+version = "1.5.2+3"
+
+[[Xorg_libXrender_jll]]
+deps = ["Libdl", "Pkg", "Xorg_libX11_jll"]
+git-tree-sha1 = "97a4104340d745968c78009854ab9369b59d7333"
+uuid = "ea2f1a96-1ddc-540d-b46f-429655e07cfa"
+version = "0.9.10+3"
+
+[[Xorg_libpthread_stubs_jll]]
+deps = ["Libdl", "Pkg"]
+git-tree-sha1 = "20e2b3ee7eacf9f4f64e5804879b8b12eee436db"
+uuid = "14d82f49-176c-5ed1-bb49-ad3f5cbd8c74"
+version = "0.1.0+2"
+
+[[Xorg_libxcb_jll]]
+deps = ["Libdl", "Pkg", "XSLT_jll", "Xorg_libXau_jll", "Xorg_libXdmcp_jll", "Xorg_libpthread_stubs_jll"]
+git-tree-sha1 = "c1efb50fb6a8c40c45451611fbf93feabe5f9611"
+uuid = "c7cfdc94-dc32-55de-ac96-5a1b8d977c5b"
+version = "1.13.0+2"
+
+[[Xorg_xtrans_jll]]
+deps = ["Libdl", "Pkg"]
+git-tree-sha1 = "52df68f05a75b81221a1d1420ce4a9c375b29ecc"
+uuid = "c5fb5394-a638-5e4d-96e5-b29de1b5cf10"
+version = "1.4.0+2"
+
+[[Zlib_jll]]
+deps = ["Libdl", "Pkg"]
+git-tree-sha1 = "fdd89e5ab270ea0f2a0174bd9093e557d06d4bfa"
+uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
+version = "1.2.11+16"
