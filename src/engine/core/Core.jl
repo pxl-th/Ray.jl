@@ -1,4 +1,4 @@
-module Renderer
+module EngineCore
 
 using Parameters: @with_kw
 using GLFW

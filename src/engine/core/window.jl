@@ -32,6 +32,9 @@ end
 function set_callbacks(window::Window, callback_handle::Tuple)
     GLFW.SetWindowCloseCallback(window.window, w -> (
         callback_handle[1](callback_handle[2], Event.WindowClose(false))))
+    GLFW.SetWindowSizeCallback(window.window, (window, width, height) -> (
+        callback_handle[1](callback_handle[2],
+            Event.WindowResize(false, width, height))))
 end
 
 function set_vsync(window::Window, enabled::Bool)

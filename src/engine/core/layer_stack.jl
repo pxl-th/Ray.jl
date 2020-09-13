@@ -5,8 +5,15 @@ struct LayerStack
     LayerStack() = new(Layer[], Layer[])
 end
 
-push_layer(ls::LayerStack, layer::Layer) = push!(ls.layers, layer)
-push_overlay(ls::LayerStack, layer::Layer) = push!(ls.overlays, layer)
+function push_layer(ls::LayerStack, layer::T) where T <: Layer
+    push!(ls.layers, layer)
+    on_attach(layer, args...)
+end
+function push_overlay(ls::LayerStack, layer::T, args...) where T <: Layer
+    @info "Pushing overlay $(typeof(layer))"
+    push!(ls.overlays, layer)
+    on_attach(layer, args...)
+end
 
 function pop_layer(ls::LayerStack, layer::Layer)
     id = findfirst(x -> x == layer, ls.layers)

@@ -3,6 +3,29 @@
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
+[[CEnum]]
+git-tree-sha1 = "215a9aa4a1f23fbd05b92769fdd62559488d70e9"
+uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
+version = "0.4.1"
+
+[[CImGui]]
+deps = ["CImGui_jll", "CSyntax", "GLFW", "Libdl", "ModernGL"]
+git-tree-sha1 = "dbeb25951dc1fc95d9aa61b770d177e25a4a381e"
+uuid = "5d785b6c-b76f-510e-a07c-3070796c7e87"
+version = "1.78.2"
+
+[[CImGui_jll]]
+deps = ["Libdl", "Pkg"]
+git-tree-sha1 = "12c634e5133a345399520c13aa753156dd6b383f"
+uuid = "7dd61d3b-0da5-5c94-bbf9-a0296c6e3925"
+version = "1.78.0+0"
+
+[[CSyntax]]
+deps = ["CEnum"]
+git-tree-sha1 = "50a830730a04cd9ab8468a60b93ac2ca9d34ba17"
+uuid = "ea656a56-6ca6-5dda-bba5-7b6963a5f74c"
+version = "0.4.0"
+
 [[Dates]]
 deps = ["Printf"]
 uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
