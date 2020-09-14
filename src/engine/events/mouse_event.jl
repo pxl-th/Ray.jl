@@ -10,14 +10,14 @@ end
 
 abstract type AbstractMouseButtonEvent <: AbstractEvent end
 
-mutable struct MouseButtonEvent <: AbstractMouseButtonEvent
-    button::Codes.MouseCode
-end
+# mutable struct MouseButtonEvent <: AbstractMouseButtonEvent
+#     button::Codes.MouseCode
+# end
 
-mutable struct MouseButtonPressedEvent <: AbstractMouseButtonEvent
-    button::Codes.MouseCode
-end
+# mutable struct MouseButtonPressedEvent <: AbstractMouseButtonEvent
+#     button::Codes.MouseCode
+# end
 
-mutable struct MouseButtonReleasedEvent <: AbstractMouseButtonEvent
-    button::Codes.MouseCode
-end
+# mutable struct MouseButtonReleasedEvent <: AbstractMouseButtonEvent
+#     button::Codes.MouseCode
+# end

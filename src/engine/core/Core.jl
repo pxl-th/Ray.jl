@@ -6,6 +6,7 @@ using GLFW
 using ..Abstractions
 using ..OpenGLBackend
 using ..Event
+using ..Ray
 
 GLFW_INITIALIZED = false
 

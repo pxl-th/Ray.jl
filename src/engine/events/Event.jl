@@ -1,7 +1,5 @@
 module Event
 
-using ..Codes
-
 abstract type AbstractEvent end
 
 mutable struct WindowClose <: AbstractEvent

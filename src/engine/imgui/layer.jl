@@ -33,7 +33,7 @@ function EngineCore.on_attach(iml::ImGuiLayer)
     CImGui.Set_KeyMap(io, CImGui.ImGuiKey_Y, GLFW.KEY_Y)
     CImGui.Set_KeyMap(io, CImGui.ImGuiKey_Z, GLFW.KEY_Z)
 
-    CImGui.ImGui_ImplGlfw_InitForOpenGL(Ray.native_window(Ray.APPLICATION), true)
+    CImGui.ImGui_ImplGlfw_InitForOpenGL(Ray.native_window(Ray.get_application()), true)
     CImGui.ImGui_ImplOpenGL3_Init(410)
 end
 
@@ -63,9 +63,8 @@ end
 
 function on_end()
     io = CImGui.GetIO()
-    io.DisplaySize = CImGui.ImVec2(
-        Ray.APPLICATION.window |> get_width,
-        Ray.APPLICATION.window |> get_height)
+    window = Ray.get_application().window
+    io.DisplaySize = CImGui.ImVec2(window |> get_width, window |> get_height)
 
     CImGui.Render()
     CImGui.ImGui_ImplOpenGL3_RenderDrawData(CImGui.GetDrawData())

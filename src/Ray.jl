@@ -1,8 +1,13 @@
 module Ray
-"""
-Currently instantiated application.
-"""
-APPLICATION = nothing
+
+let application = nothing
+    global get_application() = application
+    global function set_application(app)
+        application ≢ nothing &&
+            error("Only one application instance is allowed.")
+        application = app
+    end
+end
 
 using Parameters: @with_kw
 using ModernGL
@@ -10,12 +15,10 @@ using ModernGL
 include("backend/Abstractions.jl")
 include("backend/opengl/OpenGL.jl")
 
-include("engine/core/Codes.jl")
 include("engine/events/Event.jl")
 include("engine/core/Core.jl")
 include("engine/imgui/ImGUI.jl")
 
-using .Codes
 using .Event
 using .EngineCore
 using .ImGUI
@@ -47,6 +50,7 @@ close(app::Application) = app.running = false
 function on_event(app::Application, event::Event.WindowClose)
     app.running = false
     event.handled = true
+
     EngineCore.on_event(app.layer_stack, event)
     event
 end
@@ -81,6 +85,7 @@ end
 function main()
     global APPLICATION
     application = Application()
+    set_application(application)
     APPLICATION = application
 
     EngineCore.push_overlay(application.layer_stack, ImGUI.ImGuiLayer())
