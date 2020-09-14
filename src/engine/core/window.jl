@@ -43,8 +43,11 @@ function set_vsync(window::Window, enabled::Bool)
 end
 
 is_vsync(window::Window)::Bool = window.properties.vsync
+
 get_width(window::Window)::Int64 = window.properties.width
 get_height(window::Window)::Int64 = window.properties.height
+set_width(window::Window, width::Int64) = window.properties.width = width
+set_height(window::Window, height::Int64) = window.properties.height = height
 
 function on_update(window::Window)
     GLFW.PollEvents()

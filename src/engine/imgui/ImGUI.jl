@@ -6,6 +6,7 @@ using CImGui
 using CImGui.CSyntax
 using ..Event
 using ..EngineCore
+import ..Ray
 
 include("layer.jl")
 

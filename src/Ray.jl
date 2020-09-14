@@ -1,4 +1,8 @@
 module Ray
+"""
+Currently instantiated application.
+"""
+APPLICATION = nothing
 
 using Parameters: @with_kw
 using ModernGL
@@ -6,13 +10,16 @@ using ModernGL
 include("backend/Abstractions.jl")
 include("backend/opengl/OpenGL.jl")
 
+include("engine/core/Codes.jl")
 include("engine/events/Event.jl")
 include("engine/core/Core.jl")
 include("engine/imgui/ImGUI.jl")
 
+using .Codes
 using .Event
 using .EngineCore
 using .ImGUI
+
 
 @with_kw mutable struct Application
     window::EngineCore.Window
@@ -45,7 +52,9 @@ function on_event(app::Application, event::Event.WindowClose)
 end
 
 function on_event(app::Application, event::Event.WindowResize)
-    @info "New resolution $(event.width)x$(event.height)"
+    set_width(app.window, event.width)
+    set_height(app.window, event.height)
+
     EngineCore.on_event(app.layer_stack, event)
     event
 end
@@ -70,9 +79,11 @@ function run(app::Application)
 end
 
 function main()
+    global APPLICATION
     application = Application()
-    EngineCore.push_overlay(
-        application.layer_stack, ImGUI.ImGuiLayer(), native_window(application))
+    APPLICATION = application
+
+    EngineCore.push_overlay(application.layer_stack, ImGUI.ImGuiLayer())
     application |> run
 end
 main()

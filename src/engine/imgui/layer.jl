@@ -1,6 +1,6 @@
 struct ImGuiLayer <: EngineCore.Layer end
 
-function EngineCore.on_attach(iml::ImGuiLayer, window)
+function EngineCore.on_attach(iml::ImGuiLayer)
     @info "Attaching ImGui Layer"
     CImGui.CreateContext()
     CImGui.StyleColorsDark()
@@ -33,7 +33,7 @@ function EngineCore.on_attach(iml::ImGuiLayer, window)
     CImGui.Set_KeyMap(io, CImGui.ImGuiKey_Y, GLFW.KEY_Y)
     CImGui.Set_KeyMap(io, CImGui.ImGuiKey_Z, GLFW.KEY_Z)
 
-    CImGui.ImGui_ImplGlfw_InitForOpenGL(window, true)
+    CImGui.ImGui_ImplGlfw_InitForOpenGL(Ray.native_window(Ray.APPLICATION), true)
     CImGui.ImGui_ImplOpenGL3_Init(410)
 end
 
@@ -46,10 +46,13 @@ show = true
 function EngineCore.on_update(iml::ImGuiLayer, timestep::Float64)
     global show
     io = CImGui.GetIO()
-    io.DisplaySize = CImGui.ImVec2(1024, 1024)
     io.DeltaTime = timestep
 
     @c CImGui.ShowDemoWindow(&show)
+end
+
+function EngineCore.on_event(iml::ImGuiLayer, ::Event.AbstractEvent)
+
 end
 
 function on_begin()
@@ -59,10 +62,11 @@ function on_begin()
 end
 
 function on_end()
+    io = CImGui.GetIO()
+    io.DisplaySize = CImGui.ImVec2(
+        Ray.APPLICATION.window |> get_width,
+        Ray.APPLICATION.window |> get_height)
+
     CImGui.Render()
     CImGui.ImGui_ImplOpenGL3_RenderDrawData(CImGui.GetDrawData())
-end
-
-function EngineCore.on_event(iml::ImGuiLayer, ::Event.AbstractEvent)
-
 end
