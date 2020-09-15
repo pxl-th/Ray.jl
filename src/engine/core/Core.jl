@@ -13,5 +13,6 @@ GLFW_INITIALIZED = false
 include("window.jl")
 include("layer.jl")
 include("layer_stack.jl")
+include("input.jl")
 
 end

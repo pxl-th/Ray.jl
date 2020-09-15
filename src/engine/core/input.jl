@@ -1,24 +1,20 @@
 """
 For now we rely only on GLFW for input polling.
 """
-abstract type Input end
-
-function is_key_pressed(::Input, key::GLFW.Key)::Bool
-
+function is_key_pressed(key::GLFW.Key)::Bool
+    native_window = Ray.get_application() |> Ray.native_window
+    GLFW.GetKey(native_window, key)
 end
 
-function is_mouse_button_pressed(::Input, button::GLFW.MouseButton)::Bool
-
+function is_mouse_button_pressed(button::GLFW.MouseButton)::Bool
+    native_window = Ray.get_application() |> Ray.native_window
+    GLFW.GetMouseButton(native_window, button)
 end
 
-function get_mouse_position(::Input)::Tuple{Float64, Float64}
-
+function get_mouse_position()::NamedTuple{(:x, :y), Tuple{Float64, Float64}}
+    native_window = Ray.get_application() |> Ray.native_window
+    GLFW.GetCursorPos(native_window)
 end
 
-function get_mouse_x(::Input)::Float64
-
-end
-
-function get_mouse_y(::Input)::Float64
-
-end
+get_mouse_x()::Float64 = get_mouse_position().x
+get_mouse_y()::Float64 = get_mouse_position().y

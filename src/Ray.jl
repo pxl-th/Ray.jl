@@ -1,5 +1,7 @@
 module Ray
 
+using GLFW
+
 let application = nothing
     global get_application() = application
     global function set_application(app)
