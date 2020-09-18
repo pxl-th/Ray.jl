@@ -3,8 +3,7 @@ export get_height, get_width, set_width, set_height
 
 using Parameters: @with_kw
 using GLFW
-using ..Abstractions
-using ..OpenGLBackend
+using ..Renderer
 using ..Event
 using ..Ray
 

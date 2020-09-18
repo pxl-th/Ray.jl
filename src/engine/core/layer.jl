@@ -8,4 +8,3 @@ function on_event(::Layer, ::Event.AbstractEvent) end
 function on_imgui_begin(::Layer) end
 function on_imgui_end(::Layer) end
 function on_imgui_render(::Layer, timestep::Float64) end
-

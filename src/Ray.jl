@@ -1,6 +1,8 @@
 module Ray
 
 using GLFW
+using Parameters: @with_kw
+using ModernGL
 
 let application = nothing
     global get_application() = application
@@ -11,16 +13,12 @@ let application = nothing
     end
 end
 
-using Parameters: @with_kw
-using ModernGL
-
-include("backend/Abstractions.jl")
-include("backend/opengl/OpenGL.jl")
-
+include("engine/renderer/Renderer.jl")
 include("engine/events/Event.jl")
 include("engine/core/Core.jl")
 include("engine/imgui/ImGUI.jl")
 
+using .Renderer
 using .Event
 using .EngineCore
 using .ImGUI
@@ -85,7 +83,7 @@ function run(app::Application)
             (current_time - app.last_frame_time) : (1 / 60)
         app.last_frame_time = current_time
 
-        glClearColor(0.9, 0.1, 0.1, 1)
+        glClearColor(0.1, 0.1, 0.1, 1)
         glClear(GL_COLOR_BUFFER_BIT)
 
         !app.minimized && begin
@@ -96,8 +94,26 @@ function run(app::Application)
     end
 end
 
+struct CustomLayer <: EngineCore.Layer
+    vb::Renderer.get_backend().VertexBuffer
+    ib::Renderer.get_backend().IndexBuffer
+end
+
+function CustomLayer()
+    triangle = Float32[
+        -0.5, 0.0, 0.0,
+         0.5, 0.0, 0.0,
+         0.0, 0.5, 0.0,
+    ]
+    indices = UInt32[0, 1, 2]
+    vb = Renderer.get_backend().VertexBuffer(triangle, sizeof(triangle))
+    ib = Renderer.get_backend().IndexBuffer(indices)
+    CustomLayer(vb, ib)
+end
+
 function main()
     application = Application()
+    EngineCore.push_layer(application.layer_stack, CustomLayer())
     EngineCore.push_overlay(application.layer_stack, ImGUI.ImGuiLayer())
     application |> run
 end
