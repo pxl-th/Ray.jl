@@ -7,12 +7,11 @@ end
 
 function push_layer(ls::LayerStack, layer::T) where T <: Layer
     push!(ls.layers, layer)
-    on_attach(layer, args...)
+    on_attach(layer)
 end
-function push_overlay(ls::LayerStack, layer::T, args...) where T <: Layer
-    @info "Pushing overlay $(typeof(layer))"
+function push_overlay(ls::LayerStack, layer::T) where T <: Layer
     push!(ls.overlays, layer)
-    on_attach(layer, args...)
+    on_attach(layer)
 end
 
 function pop_layer(ls::LayerStack, layer::Layer)
@@ -41,5 +40,18 @@ function on_update(ls::LayerStack, timestep::Float64)
     end
     for layer in ls.layers
         on_update(layer, timestep)
+    end
+end
+
+function on_imgui_render(ls::LayerStack, timestep::Float64)
+    for overlay in ls.overlays
+        on_imgui_begin(overlay)
+        on_imgui_render(overlay, timestep)
+        on_imgui_end(overlay)
+    end
+    for layer in ls.layers
+        on_imgui_begin(layer)
+        on_imgui_render(layer, timestep)
+        on_imgui_end(layer)
     end
 end

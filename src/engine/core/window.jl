@@ -20,6 +20,8 @@ function Window(props::WindowProps)
         success = GLFW.Init()
         @assert success "Failed to initialize GLFW!"
         GLFW_INITIALIZED = true
+        GLFW.SetErrorCallback((error, description) ->
+            @error "Error $error: $description")
     end
 
     window = GLFW.CreateWindow(props.width, props.height, props.title)
@@ -29,12 +31,42 @@ function Window(props::WindowProps)
     Window(props, window, context)
 end
 
-function set_callbacks(window::Window, callback_handle::Tuple)
-    GLFW.SetWindowCloseCallback(window.window, w -> (
-        callback_handle[1](callback_handle[2], Event.WindowClose(false))))
-    GLFW.SetWindowSizeCallback(window.window, (window, width, height) -> (
-        callback_handle[1](callback_handle[2],
-            Event.WindowResize(false, width, height))))
+function set_callbacks(window::Window, callback_handle::Function)
+    application = Ray.get_application()
+
+    GLFW.SetWindowCloseCallback(window.window, ::GLFW.Window ->
+        callback_handle(application, Event.WindowClose(false)))
+    GLFW.SetWindowSizeCallback(window.window, (_, width, height) ->
+        callback_handle(application, Event.WindowResize(false, width, height)))
+    GLFW.SetCursorPosCallback(window.window,
+        (::GLFW.Window, x_pos::Float64, y_pos::Float64) ->
+            callback_handle(application, Event.MouseMoved(false, x_pos, y_pos)))
+    GLFW.SetCharCallback(window.window, (::GLFW.Window, key::Char) ->
+        callback_handle(application, Event.KeyTyped(false, key)))
+    GLFW.SetScrollCallback(window.window,
+        (::GLFW.Window, x_offset::Float64, y_offset::Float64) ->
+            callback_handle(application, Event.MouseScrolled(false, x_offset, y_offset)))
+
+    GLFW.SetKeyCallback(window.window,
+        (::GLFW.Window, key::GLFW.Key, ::Int32, action::GLFW.Action, ::Int32) -> begin
+            if action == GLFW.PRESS
+                event = Event.KeyPressed(false, key, 0)
+            elseif action == GLFW.RELEASE
+                event = Event.KeyReleased(false, key)
+            elseif action == GLFW.REPEAT
+                event = Event.KeyPressed(false, key, 1)
+            end
+            callback_handle(application, event)
+        end)
+    GLFW.SetMouseButtonCallback(window.window,
+        (::GLFW.Window, button::GLFW.MouseButton, action::GLFW.Action, ::Int32) -> begin
+            if action == GLFW.PRESS
+                event = Event.MouseButtonPressed(false, button)
+            elseif action == GLFW.RELEASE
+                event = Event.MouseButtonReleased(false, button)
+            end
+            callback_handle(application, event)
+        end)
 end
 
 function set_vsync(window::Window, enabled::Bool)

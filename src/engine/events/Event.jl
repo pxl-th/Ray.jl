@@ -1,5 +1,7 @@
 module Event
 
+using GLFW: Key, MouseButton
+
 abstract type AbstractEvent end
 
 mutable struct WindowClose <: AbstractEvent
@@ -11,5 +13,8 @@ mutable struct WindowResize <: AbstractEvent
     width::Int64
     height::Int64
 end
+
+include("keyboard.jl")
+include("mouse.jl")
 
 end
