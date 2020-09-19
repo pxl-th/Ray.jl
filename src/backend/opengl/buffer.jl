@@ -30,11 +30,11 @@ function IndexBuffer(
     id = @ref glGenBuffers(1, RepUInt32)
     count = count ≡ nothing ? length(indices) : count
 
-    glBindBuffer(GL_ARRAY_BUFFER, id)
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id)
     glBufferData(
-        GL_ARRAY_BUFFER, sizeof(eltype(indices)) * count,
+        GL_ELEMENT_ARRAY_BUFFER, sizeof(eltype(indices)) * count,
         indices, GL_STATIC_DRAW)
-    glBindBuffer(GL_ARRAY_BUFFER, 0)
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
     IndexBuffer(id, count)
 end

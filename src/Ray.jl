@@ -13,6 +13,7 @@ let application = nothing
     end
 end
 
+include("backend/macros.jl")
 include("engine/renderer/Renderer.jl")
 include("engine/events/Event.jl")
 include("engine/core/Core.jl")
@@ -97,18 +98,57 @@ end
 struct CustomLayer <: EngineCore.Layer
     vb::Renderer.get_backend().VertexBuffer
     ib::Renderer.get_backend().IndexBuffer
+    va::UInt32
+    shader::Renderer.get_backend().Shader
 end
 
 function CustomLayer()
+    vertex_shader = raw"""
+    #version 330 core
+
+    layout (location = 0) in vec3 a_Position;
+
+    void main() {
+        gl_Position = vec4(a_Position, 1.0);
+    }
+    """
+    fragment_shader = raw"""
+    #version 330 core
+
+    layout (location = 0) out vec4 color;
+
+    void main() {
+        color = vec4(0.8, 0.2, 0.3, 1.0);
+    }
+    """
+    shader = Renderer.get_backend().Shader(vertex_shader, fragment_shader)
+
     triangle = Float32[
         -0.5, 0.0, 0.0,
          0.5, 0.0, 0.0,
          0.0, 0.5, 0.0,
     ]
     indices = UInt32[0, 1, 2]
+
+    va = @ref glGenVertexArrays(1, RepUInt32)
+    glBindVertexArray(va)
+
     vb = Renderer.get_backend().VertexBuffer(triangle, sizeof(triangle))
+    vb |> Renderer.get_backend().bind
+
     ib = Renderer.get_backend().IndexBuffer(indices)
-    CustomLayer(vb, ib)
+    ib |> Renderer.get_backend().bind
+
+    glEnableVertexAttribArray(0)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float32), C_NULL)
+
+    CustomLayer(vb, ib, va, shader)
+end
+
+function EngineCore.on_update(cs::CustomLayer, timestep::Float64)
+    cs.shader |> Renderer.get_backend().bind
+    glBindVertexArray(cs.va)
+    glDrawElements(GL_TRIANGLES, cs.ib.count, GL_UNSIGNED_INT, C_NULL)
 end
 
 function main()

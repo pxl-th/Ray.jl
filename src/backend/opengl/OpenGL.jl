@@ -8,5 +8,6 @@ include("../macros.jl")
 
 include("context.jl")
 include("buffer.jl")
+include("shader.jl")
 
 end

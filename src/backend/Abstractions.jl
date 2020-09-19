@@ -17,4 +17,10 @@ function bind(::IndexBuffer) end
 function unbind(::IndexBuffer) end
 function delete(::IndexBuffer) end
 
+abstract type Shader end
+
+function bind(::Shader) end
+function unbind(::Shader) end
+function delete(::Shader) end
+
 end
