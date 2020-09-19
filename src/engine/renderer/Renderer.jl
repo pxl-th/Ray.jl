@@ -1,5 +1,4 @@
 module Renderer
-export get_backend, set_backend
 
 include("../../backend/Abstractions.jl")
 include("../../backend/opengl/OpenGL.jl")
@@ -12,4 +11,5 @@ let backend = OpenGLBackend
     global set_backend(new_backend) = backend = new_backend
 end
 
+export get_backend, set_backend, BufferElement, BufferLayout, size, length
 end

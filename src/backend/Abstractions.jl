@@ -1,4 +1,5 @@
 module Abstractions
+export BufferLayout, BufferElement, size, length
 
 abstract type AbstractContext end
 
@@ -22,5 +23,42 @@ abstract type Shader end
 function bind(::Shader) end
 function unbind(::Shader) end
 function delete(::Shader) end
+
+mutable struct BufferElement
+    name::String
+    type::DataType # TODO constrain to geometry basics
+    offset::UInt32
+    normalized::Bool
+end
+
+BufferElement(type::DataType, name::String, normalized::Bool = false) =
+    BufferElement(name, type, 0, normalized)
+
+size(be::BufferElement) = sizeof(be.type)
+Base.length(be::BufferElement) = length(be.type)
+
+struct BufferLayout
+    elements::Vector{BufferElement}
+    stride::UInt32
+end
+
+function BufferLayout(elements::Vector{BufferElement})
+    stride = _calculate_stride_and_offset!(elements)
+    BufferLayout(elements, stride)
+end
+
+function _calculate_stride_and_offset!(
+    elements::AbstractVector{BufferElement},
+)::UInt32
+    offset = 0
+    stride = 0
+
+    for element in elements
+        element.offset += offset
+        offset += size(element)
+        stride += size(element)
+    end
+    UInt32(stride)
+end
 
 end

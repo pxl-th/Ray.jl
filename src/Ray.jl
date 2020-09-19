@@ -1,5 +1,6 @@
 module Ray
 
+using GeometryBasics
 using GLFW
 using Parameters: @with_kw
 using ModernGL
@@ -23,6 +24,8 @@ using .Renderer
 using .Event
 using .EngineCore
 using .ImGUI
+
+Backend = Renderer.get_backend()
 
 
 @with_kw mutable struct Application
@@ -96,10 +99,10 @@ function run(app::Application)
 end
 
 struct CustomLayer <: EngineCore.Layer
-    vb::Renderer.get_backend().VertexBuffer
-    ib::Renderer.get_backend().IndexBuffer
+    vb::Backend.VertexBuffer
+    ib::Backend.IndexBuffer
     va::UInt32
-    shader::Renderer.get_backend().Shader
+    shader::Backend.Shader
 end
 
 function CustomLayer()
@@ -107,46 +110,66 @@ function CustomLayer()
     #version 330 core
 
     layout (location = 0) in vec3 a_Position;
+    layout (location = 1) in vec4 a_Color;
+
+    out vec4 out_color;
 
     void main() {
+        out_color = a_Color;
         gl_Position = vec4(a_Position, 1.0);
     }
     """
     fragment_shader = raw"""
     #version 330 core
 
+    in vec4 out_color;
+
     layout (location = 0) out vec4 color;
 
     void main() {
-        color = vec4(0.8, 0.2, 0.3, 1.0);
+        color = out_color;
     }
     """
-    shader = Renderer.get_backend().Shader(vertex_shader, fragment_shader)
+    shader = Backend.Shader(vertex_shader, fragment_shader)
 
+    layout = BufferLayout([
+        BufferElement(Point3f0, "a_Position")
+        BufferElement(Point4f0, "a_Color")
+    ])
     triangle = Float32[
-        -0.5, 0.0, 0.0,
-         0.5, 0.0, 0.0,
-         0.0, 0.5, 0.0,
+        -0.5, 0.0, 0.0, 0.8, 0.2, 0.3, 1.0,
+         0.5, 0.0, 0.0, 0.2, 0.3, 0.8, 1.0,
+         0.0, 0.5, 0.0, 0.3, 0.8, 0.2, 1.0,
     ]
     indices = UInt32[0, 1, 2]
 
     va = @ref glGenVertexArrays(1, RepUInt32)
     glBindVertexArray(va)
 
-    vb = Renderer.get_backend().VertexBuffer(triangle, sizeof(triangle))
-    vb |> Renderer.get_backend().bind
+    vb = Backend.VertexBuffer(triangle, sizeof(triangle))
+    vb |> Backend.bind
+    Backend.set_layout(vb, layout)
 
-    ib = Renderer.get_backend().IndexBuffer(indices)
-    ib |> Renderer.get_backend().bind
+    ib = Backend.IndexBuffer(indices)
+    ib |> Backend.bind
 
-    glEnableVertexAttribArray(0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float32), C_NULL)
+    for (i, element) in enumerate(vb.layout.elements)
+        glEnableVertexAttribArray(i - 1)
+        glVertexAttribPointer(
+            i - 1,
+            length(element),
+            Backend.get_base_type(element),
+            element.normalized ? GL_TRUE : GL_FALSE,
+            layout.stride,
+            Ptr{Cvoid}(Int64(element.offset))
+        )
+    end
 
     CustomLayer(vb, ib, va, shader)
 end
 
 function EngineCore.on_update(cs::CustomLayer, timestep::Float64)
-    cs.shader |> Renderer.get_backend().bind
+    cs.shader |> Backend.bind
     glBindVertexArray(cs.va)
     glDrawElements(GL_TRIANGLES, cs.ib.count, GL_UNSIGNED_INT, C_NULL)
 end
