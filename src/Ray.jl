@@ -59,24 +59,26 @@ function on_event(app::Application, event::Event.WindowClose)
 end
 
 function on_event(app::Application, event::Event.WindowResize)
+    if event.width == 0 || event.height == 0
+        app.minimized = true
+        return
+    end
+
+    app.minimized = false
     set_width(app.window, event.width)
     set_height(app.window, event.height)
-    @info "Window resized [$(event.width)x$(event.height)]"
     EngineCore.on_event(app.layer_stack, event)
 end
 
 function on_event(app::Application, event::Event.KeyPressed)
-    @info "Pressed [$(event.key)] key"
     EngineCore.on_event(app.layer_stack, event)
 end
 
 function on_event(app::Application, event::Event.KeyReleased)
-    @info "Released [$(event.key)] key"
     EngineCore.on_event(app.layer_stack, event)
 end
 
 function on_event(app::Application, event::Event.AbstractEvent)
-    @info "Default event fallback: $event"
     EngineCore.on_event(app.layer_stack, event)
 end
 
@@ -87,10 +89,10 @@ function run(app::Application)
             (current_time - app.last_frame_time) : (1 / 60)
         app.last_frame_time = current_time
 
-        glClearColor(0.1, 0.1, 0.1, 1)
-        glClear(GL_COLOR_BUFFER_BIT)
+        Backend.set_clear_color(0.1, 0.1, 0.1, 1)
+        Backend.clear()
 
-        !app.minimized && begin
+        if !app.minimized
             EngineCore.on_update(app.layer_stack, timestep)
             EngineCore.on_imgui_render(app.layer_stack, timestep)
         end
@@ -145,8 +147,8 @@ function CustomLayer()
     va = Backend.VertexArray()
     ib = Backend.IndexBuffer(indices)
     vb = Backend.VertexBuffer(data, sizeof(data))
-    Backend.set_layout(vb, layout)
 
+    Backend.set_layout(vb, layout)
     Backend.add_vertex_buffer(va, vb)
     Backend.set_index_buffer(va, ib)
 
@@ -154,10 +156,7 @@ function CustomLayer()
 end
 
 function EngineCore.on_update(cs::CustomLayer, timestep::Float64)
-    cs.shader |> Backend.bind
-    cs.va |> Backend.bind
-    glDrawElements(
-        GL_TRIANGLES, cs.va.index_buffer.count, GL_UNSIGNED_INT, C_NULL)
+    Renderer.submit(cs.shader, cs.va)
 end
 
 function main()
@@ -166,7 +165,6 @@ function main()
     EngineCore.push_layer(application.layer_stack, cs)
     EngineCore.push_overlay(application.layer_stack, ImGUI.ImGuiLayer())
     application |> run
-
 end
 main()
 

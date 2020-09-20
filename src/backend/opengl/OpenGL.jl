@@ -12,4 +12,6 @@ include("buffer.jl")
 include("shader.jl")
 include("vertex_array.jl")
 
+include("renderer_api.jl")
+
 end
