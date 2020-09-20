@@ -18,6 +18,14 @@ function bind(::IndexBuffer) end
 function unbind(::IndexBuffer) end
 function delete(::IndexBuffer) end
 
+abstract type VertexArray end
+
+function bind(::VertexArray) end
+function unbind(::VertexArray) end
+function delete(::VertexArray) end
+function add_vertex_buffer(::VertexArray, ::VertexBuffer) end
+function set_index_buffer(::VertexArray, ::IndexBuffer) end
+
 abstract type Shader end
 
 function bind(::Shader) end

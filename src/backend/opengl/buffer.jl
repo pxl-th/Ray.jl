@@ -20,6 +20,7 @@ VertexBuffer(size::Integer) = VertexBuffer(C_NULL, size)
 
 bind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, buffer.id)
 unbind(::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, 0)
+delete(buffer::VertexBuffer) = glDeleteBuffers(1, Ref(buffer.id))
 set_layout(buffer::VertexBuffer, layout::Abstractions.BufferLayout) =
     buffer.layout = layout
 
@@ -46,10 +47,4 @@ end
 
 bind(buffer::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.id)
 unbind(::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
-
-get_base_type(element::BufferElement) =
-    element.type |> eltype |> _get_opengl_base_type
-
-_get_opengl_base_type(::Type{T}) where T <: Integer = GL_INT
-_get_opengl_base_type(::Type{T}) where T <: Real = GL_FLOAT
-_get_opengl_base_type(::Type{Bool}) = GL_BOOL
+delete(buffer::IndexBuffer) = glDeleteBuffers(1, Ref(buffer.id))

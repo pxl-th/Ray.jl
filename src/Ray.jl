@@ -99,9 +99,7 @@ function run(app::Application)
 end
 
 struct CustomLayer <: EngineCore.Layer
-    vb::Backend.VertexBuffer
-    ib::Backend.IndexBuffer
-    va::UInt32
+    va::Backend.VertexArray
     shader::Backend.Shader
 end
 
@@ -136,49 +134,39 @@ function CustomLayer()
         BufferElement(Point3f0, "a_Position")
         BufferElement(Point4f0, "a_Color")
     ])
-    triangle = Float32[
-        -0.5, 0.0, 0.0, 0.8, 0.2, 0.3, 1.0,
-         0.5, 0.0, 0.0, 0.2, 0.3, 0.8, 1.0,
-         0.0, 0.5, 0.0, 0.3, 0.8, 0.2, 1.0,
+    data = Float32[
+        -0.5, -0.5, 0.0, 0.8, 0.2, 0.3, 1.0,
+         0.5, -0.5, 0.0, 0.2, 0.3, 0.8, 1.0,
+         0.5,  0.5, 0.0, 0.3, 0.8, 0.2, 1.0,
+        -0.5,  0.5, 0.0, 0.9, 0.7, 0.6, 1.0,
     ]
-    indices = UInt32[0, 1, 2]
+    indices = UInt32[0, 1, 2, 2, 3, 0]
 
-    va = @ref glGenVertexArrays(1, RepUInt32)
-    glBindVertexArray(va)
-
-    vb = Backend.VertexBuffer(triangle, sizeof(triangle))
-    vb |> Backend.bind
+    va = Backend.VertexArray()
+    ib = Backend.IndexBuffer(indices)
+    vb = Backend.VertexBuffer(data, sizeof(data))
     Backend.set_layout(vb, layout)
 
-    ib = Backend.IndexBuffer(indices)
-    ib |> Backend.bind
+    Backend.add_vertex_buffer(va, vb)
+    Backend.set_index_buffer(va, ib)
 
-    for (i, element) in enumerate(vb.layout.elements)
-        glEnableVertexAttribArray(i - 1)
-        glVertexAttribPointer(
-            i - 1,
-            length(element),
-            Backend.get_base_type(element),
-            element.normalized ? GL_TRUE : GL_FALSE,
-            layout.stride,
-            Ptr{Cvoid}(Int64(element.offset))
-        )
-    end
-
-    CustomLayer(vb, ib, va, shader)
+    CustomLayer(va, shader)
 end
 
 function EngineCore.on_update(cs::CustomLayer, timestep::Float64)
     cs.shader |> Backend.bind
-    glBindVertexArray(cs.va)
-    glDrawElements(GL_TRIANGLES, cs.ib.count, GL_UNSIGNED_INT, C_NULL)
+    cs.va |> Backend.bind
+    glDrawElements(
+        GL_TRIANGLES, cs.va.index_buffer.count, GL_UNSIGNED_INT, C_NULL)
 end
 
 function main()
     application = Application()
-    EngineCore.push_layer(application.layer_stack, CustomLayer())
+    cs = CustomLayer()
+    EngineCore.push_layer(application.layer_stack, cs)
     EngineCore.push_overlay(application.layer_stack, ImGUI.ImGuiLayer())
     application |> run
+
 end
 main()
 
