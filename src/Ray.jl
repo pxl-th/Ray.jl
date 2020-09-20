@@ -103,6 +103,7 @@ end
 struct CustomLayer <: EngineCore.Layer
     va::Backend.VertexArray
     shader::Backend.Shader
+    camera::Renderer.OrthographicCamera
 end
 
 function CustomLayer()
@@ -112,11 +113,13 @@ function CustomLayer()
     layout (location = 0) in vec3 a_Position;
     layout (location = 1) in vec4 a_Color;
 
+    uniform mat4 u_ViewProjection;
+
     out vec4 out_color;
 
     void main() {
         out_color = a_Color;
-        gl_Position = vec4(a_Position, 1.0);
+        gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
     }
     """
     fragment_shader = raw"""
@@ -152,11 +155,18 @@ function CustomLayer()
     Backend.add_vertex_buffer(va, vb)
     Backend.set_index_buffer(va, ib)
 
-    CustomLayer(va, shader)
+    camera = Renderer.OrthographicCamera(-5f0, 5f0, -5f0, 5f0)
+
+    CustomLayer(va, shader, camera)
 end
 
 function EngineCore.on_update(cs::CustomLayer, timestep::Float64)
-    Renderer.submit(cs.shader, cs.va)
+    Renderer.set_position!(cs.camera, Vec3f0(-2, 2, 0))
+    Renderer.set_rotation!(cs.camera, 45f0)
+
+    begin_scene(Renderer.STATE, cs.camera)
+    Renderer.submit(Renderer.STATE, cs.shader, cs.va)
+    end_scene(Renderer.STATE)
 end
 
 function main()

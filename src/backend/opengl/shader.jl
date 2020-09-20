@@ -15,6 +15,11 @@ bind(shader::Shader) = glUseProgram(shader.id)
 unbind(::Shader) = glUseProgram(0)
 delete(shader::Shader) = glDeleteProgram(shader.id)
 
+function upload_uniform(shader::Shader, name::String, matrix::Mat4f0)
+    location = glGetUniformLocation(shader.id, name)
+    glUniformMatrix4fv(location, 1, GL_FALSE, matrix)
+end
+
 function validate_shader(shader_id::UInt32, shader::String)
     success = @ref glGetShaderiv(shader_id, GL_COMPILE_STATUS, RepInt32)
     success == GL_TRUE && return
