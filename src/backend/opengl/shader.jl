@@ -20,6 +20,11 @@ function upload_uniform(shader::Shader, name::String, matrix::Mat4f0)
     glUniformMatrix4fv(location, 1, GL_FALSE, matrix)
 end
 
+function upload_uniform(shader::Shader, name::String, value::Integer)
+    location = glGetUniformLocation(shader.id, name)
+    glUniform1i(location, value)
+end
+
 function validate_shader(shader_id::UInt32, shader::String)
     success = @ref glGetShaderiv(shader_id, GL_COMPILE_STATUS, RepInt32)
     success == GL_TRUE && return

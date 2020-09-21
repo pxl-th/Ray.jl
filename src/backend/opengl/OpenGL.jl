@@ -1,5 +1,6 @@
 module OpenGLBackend
 
+using Images
 using GeometryBasics
 using GLFW
 using ModernGL
@@ -9,6 +10,7 @@ include("../macros.jl")
 
 include("context.jl")
 include("buffer.jl")
+include("texture.jl")
 include("shader.jl")
 include("vertex_array.jl")
 

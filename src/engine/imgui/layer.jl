@@ -1,10 +1,6 @@
 abstract type GuiLayer <: Layer end
 struct ImGuiLayer <: GuiLayer end
 
-# function EngineCore.on_detach(::ImGuiLayer) end
-# function EngineCore.on_update(::ImGuiLayer, timestep::Float64) end
-# function EngineCore.on_event(::ImGuiLayer, ::Event.AbstractEvent) end
-
 function EngineCore.on_attach(::GuiLayer)
     @info "Attaching ImGui Layer"
     CImGui.CreateContext()
@@ -13,6 +9,7 @@ function EngineCore.on_attach(::GuiLayer)
     io.ConfigFlags |= CImGui.ImGuiConfigFlags_NavEnableKeyboard
 
     CImGui.StyleColorsDark()
+    CImGui.ImGuiStyle_Set_WindowRounding(CImGui.GetStyle(), 0f0)
 
     CImGui.ImGui_ImplGlfw_InitForOpenGL(
         Ray.native_window(Ray.get_application()), false)

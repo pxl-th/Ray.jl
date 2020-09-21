@@ -5,6 +5,7 @@ export
     submit, begin_scene, end_scene, RendererState,
     OrthographicCamera, set_rotation!, set_position!
 
+using LinearAlgebra: I
 using StaticArrays
 using GeometryBasics
 
@@ -37,12 +38,12 @@ function end_scene(renderer::RendererState) end
 
 function submit(
     renderer::RendererState, shader::Abstractions.Shader,
-    va::Abstractions.VertexArray,
+    va::Abstractions.VertexArray, transform::Mat4f0 = Mat4f0(I),
 )
     shader |> get_backend().bind
-    get_backend().upload_uniform(
-        shader, "u_ViewProjection", renderer.scene_data.view_projection,
-    )
+    get_backend().upload_uniform(shader, "u_ViewProjection", renderer.scene_data.view_projection)
+    get_backend().upload_uniform(shader, "u_Transform", transform)
+
     va |> get_backend().bind
     get_backend().draw_indexed(va)
 end

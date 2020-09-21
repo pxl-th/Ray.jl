@@ -1,5 +1,5 @@
 module Abstractions
-export BufferLayout, BufferElement, size, length
+export BufferLayout, BufferElement
 
 abstract type AbstractContext end
 
@@ -42,7 +42,7 @@ end
 BufferElement(type::DataType, name::String, normalized::Bool = false) =
     BufferElement(name, type, 0, normalized)
 
-size(be::BufferElement) = sizeof(be.type)
+Base.size(be::BufferElement) = sizeof(be.type)
 Base.length(be::BufferElement) = length(be.type)
 
 struct BufferLayout
