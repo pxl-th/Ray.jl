@@ -1,6 +1,9 @@
 module Renderer
-export get_backend, set_backend, BufferElement, BufferLayout, size, length,
-    submit, begin_scene, end_scene, RendererState
+export
+    get_backend, set_backend,
+    BufferElement, BufferLayout, size, length,
+    submit, begin_scene, end_scene, RendererState,
+    OrthographicCamera, set_rotation!, set_position!
 
 using StaticArrays
 using GeometryBasics
@@ -30,9 +33,7 @@ function begin_scene(renderer::RendererState, camera::OrthographicCamera)
     renderer.scene_data.view_projection = camera.view_projection
 end
 
-function end_scene(renderer::RendererState)
-
-end
+function end_scene(renderer::RendererState) end
 
 function submit(
     renderer::RendererState, shader::Abstractions.Shader,

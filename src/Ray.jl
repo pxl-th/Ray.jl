@@ -28,28 +28,32 @@ using .ImGUI
 Backend = Renderer.get_backend()
 
 
-@with_kw mutable struct Application
+mutable struct Application
     window::EngineCore.Window
-    layer_stack::EngineCore.LayerStack = EngineCore.LayerStack()
+    gui_layer::ImGuiLayer
+    layer_stack::EngineCore.LayerStack
 
-    running::Bool = true
-    minimized::Bool = false
-    last_frame_time::Float64 = 0.0
+    running::Bool
+    minimized::Bool
+    last_frame_time::Float64
 end
 
 function Application(name::String = "Ray")
     props = EngineCore.WindowProps(title=name)
     window = EngineCore.Window(props)
-    app = Application(window=window)
-    set_application(app)
+
+    app = Application(
+        window, ImGuiLayer(), EngineCore.LayerStack(), true, false, 0.0,
+    )
+    app |> set_application
 
     EngineCore.set_callbacks(window, on_event)
+    push_overlay(app.layer_stack, app.gui_layer)
 
     app
 end
 
 native_window(app::Application) = app.window.window
-
 close(app::Application) = app.running = false
 
 function on_event(app::Application, event::Event.WindowClose)
@@ -70,17 +74,8 @@ function on_event(app::Application, event::Event.WindowResize)
     EngineCore.on_event(app.layer_stack, event)
 end
 
-function on_event(app::Application, event::Event.KeyPressed)
+on_event(app::Application, event::Event.AbstractEvent) =
     EngineCore.on_event(app.layer_stack, event)
-end
-
-function on_event(app::Application, event::Event.KeyReleased)
-    EngineCore.on_event(app.layer_stack, event)
-end
-
-function on_event(app::Application, event::Event.AbstractEvent)
-    EngineCore.on_event(app.layer_stack, event)
-end
 
 function run(app::Application)
     while app.running
@@ -89,93 +84,15 @@ function run(app::Application)
             (current_time - app.last_frame_time) : (1 / 60)
         app.last_frame_time = current_time
 
-        Backend.set_clear_color(0.1, 0.1, 0.1, 1)
-        Backend.clear()
-
         if !app.minimized
             EngineCore.on_update(app.layer_stack, timestep)
+
+            on_imgui_begin(app.gui_layer)
             EngineCore.on_imgui_render(app.layer_stack, timestep)
+            on_imgui_end(app.gui_layer)
         end
         app.window |> EngineCore.on_update
     end
 end
-
-struct CustomLayer <: EngineCore.Layer
-    va::Backend.VertexArray
-    shader::Backend.Shader
-    camera::Renderer.OrthographicCamera
-end
-
-function CustomLayer()
-    vertex_shader = raw"""
-    #version 330 core
-
-    layout (location = 0) in vec3 a_Position;
-    layout (location = 1) in vec4 a_Color;
-
-    uniform mat4 u_ViewProjection;
-
-    out vec4 out_color;
-
-    void main() {
-        out_color = a_Color;
-        gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
-    }
-    """
-    fragment_shader = raw"""
-    #version 330 core
-
-    in vec4 out_color;
-
-    layout (location = 0) out vec4 color;
-
-    void main() {
-        color = out_color;
-    }
-    """
-    shader = Backend.Shader(vertex_shader, fragment_shader)
-
-    layout = BufferLayout([
-        BufferElement(Point3f0, "a_Position")
-        BufferElement(Point4f0, "a_Color")
-    ])
-    data = Float32[
-        -0.5, -0.5, 0.0, 0.8, 0.2, 0.3, 1.0,
-         0.5, -0.5, 0.0, 0.2, 0.3, 0.8, 1.0,
-         0.5,  0.5, 0.0, 0.3, 0.8, 0.2, 1.0,
-        -0.5,  0.5, 0.0, 0.9, 0.7, 0.6, 1.0,
-    ]
-    indices = UInt32[0, 1, 2, 2, 3, 0]
-
-    va = Backend.VertexArray()
-    ib = Backend.IndexBuffer(indices)
-    vb = Backend.VertexBuffer(data, sizeof(data))
-
-    Backend.set_layout(vb, layout)
-    Backend.add_vertex_buffer(va, vb)
-    Backend.set_index_buffer(va, ib)
-
-    camera = Renderer.OrthographicCamera(-5f0, 5f0, -5f0, 5f0)
-
-    CustomLayer(va, shader, camera)
-end
-
-function EngineCore.on_update(cs::CustomLayer, timestep::Float64)
-    Renderer.set_position!(cs.camera, Vec3f0(-2, 2, 0))
-    Renderer.set_rotation!(cs.camera, 45f0)
-
-    begin_scene(Renderer.STATE, cs.camera)
-    Renderer.submit(Renderer.STATE, cs.shader, cs.va)
-    end_scene(Renderer.STATE)
-end
-
-function main()
-    application = Application()
-    cs = CustomLayer()
-    EngineCore.push_layer(application.layer_stack, cs)
-    EngineCore.push_overlay(application.layer_stack, ImGUI.ImGuiLayer())
-    application |> run
-end
-main()
 
 end

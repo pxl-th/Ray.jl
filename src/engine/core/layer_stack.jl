@@ -45,13 +45,9 @@ end
 
 function on_imgui_render(ls::LayerStack, timestep::Float64)
     for overlay in ls.overlays
-        on_imgui_begin(overlay)
         on_imgui_render(overlay, timestep)
-        on_imgui_end(overlay)
     end
     for layer in ls.layers
-        on_imgui_begin(layer)
         on_imgui_render(layer, timestep)
-        on_imgui_end(layer)
     end
 end
