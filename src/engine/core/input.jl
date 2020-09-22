@@ -1,3 +1,9 @@
+module Input
+export is_key_pressed, is_mouse_button_pressed, get_mouse_position
+
+using GLFW
+using ..Ray
+
 """
 For now we rely only on GLFW for input polling.
 """
@@ -18,3 +24,5 @@ end
 
 get_mouse_x()::Float64 = get_mouse_position().x
 get_mouse_y()::Float64 = get_mouse_position().y
+
+end

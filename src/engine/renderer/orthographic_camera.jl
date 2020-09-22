@@ -71,6 +71,14 @@ mutable struct OrthographicCamera
     end
 end
 
+function set_projection!(
+    camera::OrthographicCamera, left::Float32, right::Float32,
+    bottom::Float32, top::Float32,
+)
+    camera.projection = orthographic(left, right, bottom, top, -1f0, 1f0)
+    camera.view_projection = camera.projection * camera.view
+end
+
 function set_rotation!(camera::OrthographicCamera, rotation::Float32)
     camera.rotation = rotation
     _recalculate_view!(camera)

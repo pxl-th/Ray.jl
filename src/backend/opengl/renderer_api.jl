@@ -15,3 +15,7 @@ function draw_indexed(
     count = index_count ≡ nothing ? va.index_buffer.count : index_count
     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, C_NULL)
 end
+
+function set_viewport(width::UInt32, height::UInt32)
+    glViewport(0, 0, width, height)
+end

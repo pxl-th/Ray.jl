@@ -1,7 +1,7 @@
 @with_kw mutable struct WindowProps
     title::String = "Window"
-    width::Int64 = 1024
-    height::Int64 = 1024
+    width::Int64 = 1280
+    height::Int64 = 720
 
     vsync::Bool = true
 end

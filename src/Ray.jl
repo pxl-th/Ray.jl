@@ -15,13 +15,16 @@ let application = nothing
 end
 
 include("backend/macros.jl")
-include("engine/renderer/Renderer.jl")
+
 include("engine/events/Event.jl")
+include("engine/core/input.jl")
+include("engine/renderer/Renderer.jl")
 include("engine/core/Core.jl")
 include("engine/imgui/ImGUI.jl")
 
-using .Renderer
 using .Event
+using .Input
+using .Renderer
 using .EngineCore
 using .ImGUI
 
@@ -79,6 +82,8 @@ function on_event(app::Application, event::Event.WindowResize)
     app.minimized = false
     set_width(app.window, event.width)
     set_height(app.window, event.height)
+
+    Backend.set_viewport(UInt32(event.width), UInt32(event.height))
     EngineCore.on_event(app.layer_stack, event)
 end
 

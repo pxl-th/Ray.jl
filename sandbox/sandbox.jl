@@ -10,11 +10,13 @@ struct CustomLayer <: Ray.Layer
     va::Ray.Backend.VertexArray
     texture::Ray.Backend.Texture2D
     shader_library::Ray.ShaderLibrary
-    camera::Ray.OrthographicCamera
+    controller::Ray.OrthographicCameraController
     square_position::Vector{Float32}
 end
 
 function CustomLayer()
+    controller = Ray.OrthographicCameraController(1280f0 / 720f0, true)
+
     library = Ray.ShaderLibrary()
     Ray.load!(library, raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\texture.glsl")
     texture = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\tr.png")
@@ -39,46 +41,22 @@ function CustomLayer()
     Ray.Backend.add_vertex_buffer(va, vb)
     Ray.Backend.set_index_buffer(va, ib)
 
-    camera = Ray.OrthographicCamera(-1f0, 1f0, -1f0, 1f0)
-
     shader = Ray.Renderer.get(library, "texture")
     Ray.Backend.bind(shader)
     Ray.Backend.upload_uniform(shader, "u_Texture", 0)
 
-    CustomLayer(va, texture, library, camera, Float32[0, 0, 0])
+    CustomLayer(va, texture, library, controller, Float32[0, 0, 0])
 end
 
 function Ray.on_update(cs::CustomLayer, timestep::Float64)
     timestep = Float32(timestep)
-    camera_speed = 10f0 * timestep
-    rotation_speed = 180f0 * timestep
 
-    new_position = cs.camera.position
-    if Ray.is_key_pressed(GLFW.KEY_W)
-        new_position += Vec3f0(0.0, camera_speed, 0.0)
-    elseif Ray.is_key_pressed(GLFW.KEY_S)
-        new_position -= Vec3f0(0.0, camera_speed, 0.0)
-    end
-    if Ray.is_key_pressed(GLFW.KEY_A)
-        new_position -= Vec3f0(camera_speed, 0.0, 0.0)
-    elseif Ray.is_key_pressed(GLFW.KEY_D)
-        new_position += Vec3f0(camera_speed, 0.0, 0.0)
-    end
-
-    new_rotation = cs.camera.rotation
-    if Ray.is_key_pressed(GLFW.KEY_J)
-        new_rotation -= rotation_speed
-    elseif Ray.is_key_pressed(GLFW.KEY_K)
-        new_rotation += rotation_speed
-    end
-
-    Ray.set_position!(cs.camera, new_position)
-    Ray.set_rotation!(cs.camera, new_rotation)
+    Ray.Renderer.on_update(cs.controller, timestep |> Float32)
 
     Ray.Backend.set_clear_color(0.1, 0.1, 0.1, 1)
     Ray.Backend.clear()
 
-    Ray.begin_scene(Ray.Renderer.STATE, cs.camera)
+    Ray.begin_scene(Ray.Renderer.STATE, cs.controller.camera)
 
     transform = Ray.Renderer.translation(cs.square_position)
 
@@ -86,6 +64,14 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     Ray.Backend.bind(cs.texture)
     Ray.submit(Ray.Renderer.STATE, shader, cs.va, transform)
     Ray.end_scene(Ray.Renderer.STATE)
+end
+
+function Ray.EngineCore.on_event(cs::CustomLayer, event::Ray.Event.MouseScrolled)
+    Ray.Renderer.on_event(cs.controller, event)
+end
+
+function Ray.EngineCore.on_event(cs::CustomLayer, event::Ray.Event.WindowResize)
+    Ray.Renderer.on_event(cs.controller, event)
 end
 
 function Ray.on_imgui_render(cs::CustomLayer, timestep::Float64)
