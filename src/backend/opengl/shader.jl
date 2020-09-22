@@ -1,14 +1,55 @@
 struct Shader <: Abstractions.Shader
     id::UInt32
+    name::String
 end
 
-function Shader(vertex_shader::String, fragment_shader::String)
+function Shader(name::String, vertex_shader::String, fragment_shader::String)
     shader_ids = [
         create_shader(vertex_shader, GL_VERTEX_SHADER),
-        create_shader(fragment_shader, GL_FRAGMENT_SHADER),]
+        create_shader(fragment_shader, GL_FRAGMENT_SHADER),
+    ]
     program = create_program(shader_ids)
     glDeleteShader.(shader_ids)
-    Shader(program)
+    Shader(program, name)
+end
+
+function get_shader_type(type::AbstractString)::UInt32
+    if type == "vertex"
+        return GL_VERTEX_SHADER
+    elseif type == "fragment"
+        return GL_FRAGMENT_SHADER
+    end
+    error("Unknown shader type [$type]. Supported types are [vertex, fragment].")
+end
+
+function filename(path::String)::String
+    file = basename(path)
+    last_dot = findlast('.', file)
+    String(file[begin:last_dot - 1])
+end
+
+function Shader(path::String)
+    type_token = "#type"
+    sources = split(read(path, String), type_token, keepempty=false)
+    length(sources) != 2 &&
+        error("Only vertex and fragment shaders supported for now.")
+
+    shader_sources = Dict{UInt32, AbstractString}()
+    for (i, source) in enumerate(sources)
+        meta = split(source, '\n', limit=2, keepempty=false)
+        length(meta) != 2 && error("Incorrect shader type format.")
+
+        type = meta[1] |> strip
+        shader_type = get_shader_type(type)
+        shader_source = meta[2] |> strip
+
+        shader_sources[shader_type] = shader_source |> String
+    end
+    Shader(
+        filename(path),
+        shader_sources[GL_VERTEX_SHADER],
+        shader_sources[GL_FRAGMENT_SHADER],
+    )
 end
 
 bind(shader::Shader) = glUseProgram(shader.id)
@@ -25,7 +66,7 @@ function upload_uniform(shader::Shader, name::String, value::Integer)
     glUniform1i(location, value)
 end
 
-function validate_shader(shader_id::UInt32, shader::String)
+function validate_shader(shader_id::UInt32)
     success = @ref glGetShaderiv(shader_id, GL_COMPILE_STATUS, RepInt32)
     success == GL_TRUE && return
 
@@ -52,7 +93,7 @@ function getInfoLog(object::UInt32)::String
 end
 
 
-function create_shader(shader::String, type::UInt32)::UInt32
+function create_shader(shader::AbstractString, type::UInt32)::UInt32
     shader_id = glCreateShader(type)
     shader_id == 0 && error("Failed to create shader of type [$type]")
 
@@ -61,7 +102,7 @@ function create_shader(shader::String, type::UInt32)::UInt32
     glShaderSource(shader_id, 1, gl_char_shader, C_NULL)
 
     glCompileShader(shader_id)
-    validate_shader(shader_id, shader)
+    validate_shader(shader_id)
 
     shader_id
 end

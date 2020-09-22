@@ -3,7 +3,8 @@ export
     get_backend, set_backend,
     BufferElement, BufferLayout, size, length,
     submit, begin_scene, end_scene, RendererState,
-    OrthographicCamera, set_rotation!, set_position!
+    OrthographicCamera, set_rotation!, set_position!,
+    ShaderLibrary, add!, load!, get, exists
 
 using LinearAlgebra: I
 using StaticArrays
@@ -21,6 +22,7 @@ let backend = OpenGLBackend
 end
 
 include("orthographic_camera.jl")
+include("shader.jl")
 
 mutable struct SceneData
     view_projection::Mat4f0

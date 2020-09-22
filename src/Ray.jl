@@ -47,6 +47,8 @@ function Application(name::String = "Ray")
     )
     app |> set_application
 
+    Backend.init()
+
     EngineCore.set_callbacks(window, on_event)
     push_overlay(app.layer_stack, app.gui_layer)
 
