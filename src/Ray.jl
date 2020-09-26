@@ -18,10 +18,17 @@ include("backend/macros.jl")
 
 include("engine/events/Event.jl")
 include("engine/core/input.jl")
+include("engine/core/Transformations.jl")
+
+include("engine/renderer/OrthographicCamera.jl")
 include("engine/renderer/Renderer.jl")
+include("engine/renderer/Renderer2D.jl")
+
 include("engine/core/Core.jl")
 include("engine/imgui/ImGUI.jl")
 
+using .Transformations
+using .OrthographicCameraModule
 using .Event
 using .Input
 using .Renderer
@@ -111,5 +118,7 @@ end
 # PRECOMPILE
 #     - GeometryBasics
 #     - Images
+#     - Parameters
+#     - StaticArrays
 
 end

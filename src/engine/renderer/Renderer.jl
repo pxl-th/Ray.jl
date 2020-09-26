@@ -3,9 +3,7 @@ export
     get_backend, set_backend,
     BufferElement, BufferLayout, size, length,
     submit, begin_scene, end_scene, RendererState,
-    OrthographicCamera, set_rotation!, set_position!,
-    ShaderLibrary, add!, load!, get, exists,
-    OrthographicCameraController
+    ShaderLibrary, add!, load!, get, exists
 
 using LinearAlgebra: I
 using StaticArrays
@@ -17,8 +15,10 @@ using GLFW
 include("../../backend/Abstractions.jl")
 include("../../backend/opengl/OpenGL.jl")
 
-using ..Input
-using ..Event
+using Ray.Input
+using Ray.Event
+using Ray.OrthographicCameraModule
+
 using .Abstractions
 using .OpenGLBackend
 
@@ -27,8 +27,6 @@ let backend = OpenGLBackend
     global set_backend(new_backend) = backend = new_backend
 end
 
-include("orthographic_camera.jl")
-include("orthographic_camera_controller.jl")
 include("shader.jl")
 
 mutable struct SceneData

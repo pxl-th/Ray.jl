@@ -51,14 +51,14 @@ end
 function Ray.on_update(cs::CustomLayer, timestep::Float64)
     timestep = Float32(timestep)
 
-    Ray.Renderer.on_update(cs.controller, timestep |> Float32)
+    Ray.OrthographicCameraModule.on_update(cs.controller, timestep |> Float32)
 
     Ray.Backend.set_clear_color(0.1, 0.1, 0.1, 1)
     Ray.Backend.clear()
 
     Ray.begin_scene(Ray.Renderer.STATE, cs.controller.camera)
 
-    transform = Ray.Renderer.translation(cs.square_position)
+    transform = Ray.translation(cs.square_position)
 
     shader = Ray.Renderer.get(cs.shader_library, "texture")
     Ray.Backend.bind(cs.texture)
@@ -67,11 +67,11 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
 end
 
 function Ray.EngineCore.on_event(cs::CustomLayer, event::Ray.Event.MouseScrolled)
-    Ray.Renderer.on_event(cs.controller, event)
+    Ray.OrthographicCameraModule.on_event(cs.controller, event)
 end
 
 function Ray.EngineCore.on_event(cs::CustomLayer, event::Ray.Event.WindowResize)
-    Ray.Renderer.on_event(cs.controller, event)
+    Ray.OrthographicCameraModule.on_event(cs.controller, event)
 end
 
 function Ray.on_imgui_render(cs::CustomLayer, timestep::Float64)
