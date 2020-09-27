@@ -37,7 +37,6 @@ using .ImGUI
 
 Backend = Renderer.get_backend()
 
-
 mutable struct Application
     window::EngineCore.Window
     gui_layer::ImGuiLayer
@@ -114,11 +113,5 @@ function run(app::Application)
         app.window |> EngineCore.on_update
     end
 end
-
-# PRECOMPILE
-#     - GeometryBasics
-#     - Images
-#     - Parameters
-#     - StaticArrays
 
 end

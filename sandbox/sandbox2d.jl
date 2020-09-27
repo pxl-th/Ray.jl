@@ -1,5 +1,6 @@
 module Sandbox2D
 
+using LinearAlgebra: I
 using GLFW
 using CImGui
 using CImGui.CSyntax
@@ -26,11 +27,11 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     Ray.Backend.set_clear_color(0.1, 0.1, 0.1, 1)
     Ray.Backend.clear()
 
-    Ray.Renderer2D.begin_scene(cs.controller.camera)
+    Ray.Renderer2D.begin_scene(cs.controller.camera, Mat4f0(I))
 
-    Ray.Renderer2D.draw_quad(Vec2f0(1, 1), Vec2f0(1, 4), Vec4f0(0.8, 0.3, 0.2, 1.0))
-    Ray.Renderer2D.draw_quad(Vec2f0(-3, 0), Vec2f0(4, 1), Vec4f0(0.2, 0.3, 0.8, 1.0))
-    Ray.Renderer2D.draw_quad(Vec2f0(-4, 3), Vec2f0(4, 1), Vec4f0(0.3, 0.8, 0.2, 1.0))
+    # Ray.Renderer2D.draw_quad(Vec2f0(1, 1), Vec2f0(1, 4), Vec4f0(0.8, 0.3, 0.2, 1.0))
+    # Ray.Renderer2D.draw_quad(Vec2f0(-3, 0), Vec2f0(4, 1), Float32(pi / 2), Vec4f0(0.2, 0.3, 0.8, 1.0))
+    # Ray.Renderer2D.draw_quad(Vec2f0(-4, 3), Vec2f0(4, 1), Vec4f0(0.3, 0.8, 0.2, 1.0))
 
     Ray.Renderer2D.draw_quad(Vec3f0(0, 0, -0.1), Vec2f0(5, 5), cs.texture)
 

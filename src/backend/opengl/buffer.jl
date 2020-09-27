@@ -24,6 +24,17 @@ delete(buffer::VertexBuffer) = glDeleteBuffers(1, Ref(buffer.id))
 set_layout(buffer::VertexBuffer, layout::Abstractions.BufferLayout) =
     buffer.layout = layout
 
+function set_data!(vb::VertexBuffer, data::AbstractVector, size::Integer)
+    glBindBuffer(GL_ARRAY_BUFFER, vb.id)
+    glBufferSubData(GL_ARRAY_BUFFER, 0, size, data)
+end
+
+function get_data(vb::VertexBuffer, size::Integer, data::AbstractArray)
+    glBindBuffer(GL_ARRAY_BUFFER, vb.id)
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, size, data)
+    data
+end
+
 
 struct IndexBuffer <: Abstractions.IndexBuffer
     id::UInt32

@@ -9,7 +9,7 @@ struct Texture2D
     type::UInt32
 end
 
-function Texture2D(width::UInt32, height::UInt32, type::UInt32 = GL_UNSIGNED_BYTE)
+function Texture2D(width::Integer, height::Integer, type::UInt32 = GL_UNSIGNED_BYTE)
     internal_format = GL_RGBA8
     data_format = GL_RGBA
 
@@ -54,20 +54,21 @@ function Texture2D(path::String, type::UInt32 = GL_UNSIGNED_BYTE)
     Texture2D(id, width, height, path, internal_format, data_format, type)
 end
 
-function bind(texture::Texture2D, slot::UInt32 = UInt32(0))
+function bind(texture::Texture2D, slot::Integer = 0)
     glActiveTexture(GL_TEXTURE0 + slot)
     glBindTexture(GL_TEXTURE_2D, texture.id)
 end
 
-function set_data!(texture::Texture2D, data::AbstractArray, size::UInt32)
-    bpp = texture.type == GL_RGBA ? 4 : 3
+function set_data!(texture::Texture2D, data::AbstractArray, size::Integer)
+    bpp = texture.data_format == GL_RGBA ? 4 : 3
     (size != bpp * texture.width * texture.height) &&
         error("Data must be entire texture.")
 
+    glBindTexture(GL_TEXTURE_2D, texture.id)
     glTexSubImage2D(
-        texture.id, 0,
+        GL_TEXTURE_2D, 0,
         0, 0, texture.width, texture.height,
-        texture.data_format, GL_UNSIGNED_BYTE, data,
+        texture.data_format, texture.type, data,
     )
 end
 
