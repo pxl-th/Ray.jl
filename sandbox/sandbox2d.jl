@@ -7,20 +7,22 @@ using CImGui.CSyntax
 using GeometryBasics
 using Ray
 
-struct CustomLayer <: Ray.Layer
+mutable struct CustomLayer <: Ray.Layer
     texture::Ray.Renderer2D.Backend.Texture2D
     controller::Ray.OrthographicCameraController
+    total_time::Float32
 end
 
 function CustomLayer()
     Ray.Renderer2D.init()
-    texture = Ray.Renderer2D.Backend.Texture2D(raw"C:\Users\tonys\Downloads\tr.png")
+    texture = Ray.Renderer2D.Backend.Texture2D(raw"C:\Users\tonys\Downloads\kozo.jpg")
     controller = Ray.OrthographicCameraController(1280f0 / 720f0, true)
-    CustomLayer(texture, controller)
+    CustomLayer(texture, controller, 0)
 end
 
 function Ray.on_update(cs::CustomLayer, timestep::Float64)
     timestep = Float32(timestep)
+    cs.total_time += timestep
 
     Ray.OrthographicCameraModule.on_update(cs.controller, timestep |> Float32)
 
@@ -29,11 +31,17 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
 
     Ray.Renderer2D.begin_scene(cs.controller.camera, Mat4f0(I))
 
-    # Ray.Renderer2D.draw_quad(Vec2f0(1, 1), Vec2f0(1, 4), Vec4f0(0.8, 0.3, 0.2, 1.0))
-    # Ray.Renderer2D.draw_quad(Vec2f0(-3, 0), Vec2f0(4, 1), Float32(pi / 2), Vec4f0(0.2, 0.3, 0.8, 1.0))
-    # Ray.Renderer2D.draw_quad(Vec2f0(-4, 3), Vec2f0(4, 1), Vec4f0(0.3, 0.8, 0.2, 1.0))
+    for i in 0:10
+        for j in 0:10
+            Ray.Renderer2D.draw_quad(Vec3f0(i, j, 0), Vec2f0(1, 1), cs.texture)
+        end
+    end
 
-    Ray.Renderer2D.draw_quad(Vec3f0(0, 0, -0.1), Vec2f0(5, 5), cs.texture)
+    for i in 0:10
+        for j in 0:10
+            Ray.Renderer2D.draw_quad(Vec3f0(-i, -j, 0), Vec2f0(1, 1), i * cs.total_time, Point4f0(0.8, 0.3, 0.2, 1.0))
+        end
+    end
 
     Ray.Renderer2D.end_scene()
 end

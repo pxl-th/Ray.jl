@@ -71,6 +71,11 @@ function upload_uniform(shader::Shader, name::String, value::Integer)
     glUniform1i(location, value)
 end
 
+function upload_uniform(shader::Shader, name::String, values::Vector{T}) where T <: Integer
+    location = glGetUniformLocation(shader.id, name)
+    glUniform1iv(location, length(values), values)
+end
+
 function validate_shader(shader_id::UInt32)
     success = @ref glGetShaderiv(shader_id, GL_COMPILE_STATUS, RepInt32)
     success == GL_TRUE && return
