@@ -24,7 +24,7 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     timestep = Float32(timestep)
     cs.total_time += timestep
 
-    Ray.OrthographicCameraModule.on_update(cs.controller, timestep |> Float32)
+    Ray.OrthographicCameraModule.on_update(cs.controller, timestep)
 
     Ray.Backend.set_clear_color(0.1, 0.1, 0.1, 1)
     Ray.Backend.clear()
