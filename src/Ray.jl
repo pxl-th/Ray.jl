@@ -76,7 +76,9 @@ function on_event(app::Application, event::Event.KeyPressed)
     if event.key == GLFW.KEY_ESCAPE
         app.running = false
         event.handled = true
+        return
     end
+    EngineCore.on_event(app.layer_stack, event)
 end
 
 function on_event(app::Application, event::Event.WindowResize)
