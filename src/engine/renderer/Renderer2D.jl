@@ -212,6 +212,7 @@ function draw_quad(
         Point2f0(1f0, 1f0), Point2f0(0f0, 1f0),
     ]
 
+    # TODO better handling of buffer overflow
     Data.quad_index_count >= Data.max_indices && flush_reset()
 
     if texture ≡ nothing

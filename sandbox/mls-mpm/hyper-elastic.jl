@@ -1,6 +1,6 @@
-module Intro
+module HyperElastic
 
-using LinearAlgebra: I, norm
+using LinearAlgebra: I, norm, det
 using GLFW
 using CImGui
 using CImGui.CSyntax
@@ -11,7 +11,9 @@ struct Particle
     position::Point2f0
     velocity::Vec2f0
     affine_momentum::Mat2f0
+    deformation_gradient::Mat2f0
     mass::Float32
+    initial_volume::Float32
 end
 
 struct Cell
@@ -32,19 +34,52 @@ mutable struct MPM
 
     weights::Vector{Point2f0}
 
+    elastic_λ::Float32
+    elastic_μ::Float32
+
     function MPM(;
-        grid_resolution::Int32 = 64 |> Int32, δt::Float32 = 1f0,
-        gravity::Float32 = -0.05f0,
+        grid_resolution::Int32 = 64 |> Int32, δt::Float32 = 0.1f0,
+        gravity::Float32 = -0.3f0,
+        elastic_λ::Float32 = 20f0, elastic_μ::Float32 = 100f0,
     )
         num_cells = grid_resolution * grid_resolution
         # Initialize points in a square around center of the grid.
         grid, particles = reset_particles(grid_resolution, 0.5f0, 16f0)
-        new(
+        mpm = new(
             grid_resolution, num_cells, length(particles),
             δt, gravity,
             particles, grid,
             Vector{Point2f0}(undef, 3),
+            elastic_λ, elastic_μ,
         )
+
+        # Scatter particle mass to the grid.
+        particles_to_grid!(mpm)
+        # Estimate initial per-particle volume.
+        @inbounds for i in 1:mpm.num_particles
+            particle = mpm.particles[i]
+            # Quadratic interpolation weights.
+            cell_idx = floor.(particle.position)
+            cell_δ = particle.position .- cell_idx .- 0.5f0
+            quadratic_interpolation_weights!(mpm, cell_δ)
+            # Accumulate density around immediate neighbourhood.
+            density::Float32 = 0f0
+            for gx in 0:2, gy in 0:2
+                cell_position = Point2f0(cell_idx[1] + gx - 1, cell_idx[2] + gy - 1)
+                cell_position = (cell_position .+ 1) .|> Int32
+                weight = mpm.weights[gx + 1][1] * mpm.weights[gy + 1][2]
+                density += mpm.grid[cell_position...].mass * weight
+            end
+            # Initial per-particle volume estimate.
+            initial_volume = particle.mass / density
+            mpm.particles[i] = Particle(
+                particle.position, particle.velocity,
+                particle.affine_momentum, particle.deformation_gradient,
+                particle.mass, initial_volume,
+            )
+        end
+
+        mpm
     end
 end
 
@@ -53,18 +88,13 @@ function reset_particles(
 )
     grid_center = grid_resolution / 2f0
 
-    id = 1
     box_iterator = (grid_center - box_size / 2f0):spacing:(grid_center + box_size / 2f0)
-    particles = Vector{Particle}(undef, length(box_iterator) ^ 2)
-    @inbounds for i in box_iterator, j in box_iterator
-        particles[id] = Particle(
-            Point2f0(i, j),
-            randn(Point2f0) .* 2f0,
-            zeros(Mat2f0),
-            1f0,
-        )
-        id += 1
-    end
+    particles = Particle[
+        Particle(
+            Point2f0(i, j + 3f0), Vec2f0(0f0, 0f0), zeros(Mat2f0),
+            Mat2f0(I), 1f0, 0f0,
+        ) for i in box_iterator for j in box_iterator
+    ]
     grid = Cell[
         Cell(Vec2f0(0f0, 0f0), 0f0)
         for i in 1:grid_resolution, j in 1:grid_resolution
@@ -79,9 +109,21 @@ end
     mpm.weights[3] = 0.5f0 .* (0.5f0 .+ cell_δ) .^ 2
 end
 
+@inline function piola_stress(mpm::MPM, F::Mat2f0, J::Float32)::Mat2f0
+    F_inv = inv(F')
+    mpm.elastic_μ * (F - F_inv) + mpm.elastic_λ * log(J) * F_inv
+end
+
 function particles_to_grid!(mpm::MPM)
-    @inbounds Threads.@threads for i in 1:mpm.num_particles
+    @inbounds for i in 1:mpm.num_particles
         particle = mpm.particles[i]
+        # Neo-Hookean hyper-elasticity model.
+        F = particle.deformation_gradient
+        J = det(F)
+        cauchy_stress = (1f0 / J) .* piola_stress(mpm, F, J) * F'
+        # Part of the force/momentum fused update for MLS-MPM.
+        volume = particle.initial_volume * J
+        fuse = -volume * cauchy_stress * mpm.δt * 4f0
         # Quadratic interpolation weights.
         cell_idx = floor.(particle.position)
         cell_δ = particle.position .- cell_idx .- 0.5f0
@@ -100,6 +142,8 @@ function particles_to_grid!(mpm::MPM)
             mass_contribution = weight * particle.mass
             cell_mass = cell.mass + mass_contribution
             cell_velocity = cell.velocity + mass_contribution * (particle.velocity + Q)
+            # Fused force/momentum update.
+            cell_velocity += (fuse * weight) * cell_distance
             # At this point, velocity refers to momentum.
             # This gets corrected at grid velocity update step.
             mpm.grid[cell_position...] = Cell(cell_velocity, cell_mass)
@@ -128,7 +172,7 @@ function grid_to_particles!(mpm::MPM)
         particle_velocity = Vec2f0(0f0, 0f0)
         # Quadratic interpolation weights.
         cell_idx = floor.(particle.position)
-        cell_δ = particle.position - cell_idx - 0.5f0
+        cell_δ = particle.position .- cell_idx .- 0.5f0
         quadratic_interpolation_weights!(mpm, cell_δ)
         # Contruct affine per-particle momentum from APIC / MLS-MPM.
         affine_momentum = zeros(Mat2f0)
@@ -145,19 +189,23 @@ function grid_to_particles!(mpm::MPM)
                 (weighted_velocity .* cell_distance[2])...,
             )
             affine_momentum += inner_term
-
             particle_velocity += weighted_velocity
         end
         particle_affine_momentum = affine_momentum .* 4f0
-
         # Advect particle.
         particle_position = particle.position + particle_velocity * mpm.δt
         particle_position = clamp.(particle_position, 1, mpm.grid_resolution - 2)
+        # Deformation gradient update.
+        deformation_gradient = Mat2f0(I) + mpm.δt * particle_affine_momentum
+        deformation_gradient *= particle.deformation_gradient
 
         mpm.particles[i] = Particle(
             particle_position,
             particle_velocity,
-            particle_affine_momentum, particle.mass,
+            particle_affine_momentum,
+            deformation_gradient,
+            particle.mass,
+            particle.initial_volume,
         )
     end
 end
@@ -191,8 +239,8 @@ end
 
 function draw_particles(
     mpm::MPM;
-    particle_size::Float32 = 0.01f0, max_velocity::Float32 = 4f0,
-    base_color = Point4f0(0.8f0, 0.3f0, 0.2f0, 1f0),
+    particle_size::Float32 = 0.01f0, max_velocity::Float32 = 5f0,
+    base_color = Point4f0(0.8f0, 0.3f0, 0.1f0, 1f0),
     top_color = Point4f0(1f0),
 )
     for particle in mpm.particles
@@ -240,6 +288,31 @@ function Ray.EngineCore.on_event(cs::MPMLayer, event::Ray.Event.KeyPressed)
         grid, particles = reset_particles(cs.mpm.grid_resolution, 0.5f0, 16f0)
         cs.mpm.particles = particles
         cs.mpm.grid = grid
+        # Scatter particle mass to the grid.
+        particles_to_grid!(cs.mpm)
+        # Estimate initial per-particle volume.
+        @inbounds for i in 1:cs.mpm.num_particles
+            particle = cs.mpm.particles[i]
+            # Quadratic interpolation weights.
+            cell_idx = floor.(particle.position)
+            cell_δ = particle.position .- cell_idx .- 0.5f0
+            quadratic_interpolation_weights!(cs.mpm, cell_δ)
+            # Accumulate density around immediate neighbourhood.
+            density::Float32 = 0f0
+            for gx in 0:2, gy in 0:2
+                cell_position = Point2f0(cell_idx[1] + gx - 1, cell_idx[2] + gy - 1)
+                cell_position = (cell_position .+ 1) .|> Int32
+                weight = cs.mpm.weights[gx + 1][1] * cs.mpm.weights[gy + 1][2]
+                density += cs.mpm.grid[cell_position...].mass * weight
+            end
+            # Initial per-particle volume estimate.
+            initial_volume = particle.mass / density
+            cs.mpm.particles[i] = Particle(
+                particle.position, particle.velocity,
+                particle.affine_momentum, particle.deformation_gradient,
+                particle.mass, initial_volume,
+            )
+        end
     end
 end
 
@@ -248,7 +321,7 @@ function Ray.EngineCore.on_event(cs::MPMLayer, event::Ray.Event.WindowResize)
 end
 
 function Ray.on_imgui_render(cs::MPMLayer, timestep::Float64)
-    CImGui.Begin("MPM Info")
+    CImGui.Begin("Neo-Hookean Elasticity")
     CImGui.Text("Grid resolution: $(cs.mpm.grid_resolution)x$(cs.mpm.grid_resolution)")
     CImGui.Text("Total particles: $(cs.mpm.num_particles)")
     CImGui.PlotLines("", cs.timesteps, length(cs.timesteps))
