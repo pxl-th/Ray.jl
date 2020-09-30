@@ -41,34 +41,36 @@ mutable struct MPM
         num_cells = grid_resolution * grid_resolution
         iterations = ceil(1f0 / δt) |> Int32
         # Initialize points in a square around center of the grid.
-        spacing = 0.5f0
-        box_size = 16f0
-        grid_center = grid_resolution / 2f0
-
-        box_iterator = (grid_center - box_size / 2f0):spacing:(grid_center + box_size / 2f0)
-        tmp_positions = Point2f0[
-            Point2f0(i, j)
-            for i in box_iterator, j in box_iterator
-        ]
-        # Initialize particles with random velocities.
-        num_particles = length(tmp_positions)
-        particles = Particle[
-            Particle(
-                tmp_positions[i],
-                randn(Point2f0) .* 1.5f0,
-                zeros(Mat2f0),
-                1f0,
-            ) for i in 1:num_particles
-        ]
-        grid = Matrix{Cell}(undef, grid_resolution, grid_resolution)
-
+        grid, particles = reset_particles(grid_resolution, 0.5f0, 16f0)
         new(
-            grid_resolution, num_cells, num_particles,
+            grid_resolution, num_cells, length(particles),
             δt, iterations, gravity,
             particles, grid,
             Vector{Point2f0}(undef, 3),
         )
     end
+end
+
+function reset_particles(
+    grid_resolution::Int32, spacing::Float32, box_size::Float32,
+)
+    grid_center = grid_resolution / 2f0
+
+    id = 1
+    box_iterator = (grid_center - box_size / 2f0):spacing:(grid_center + box_size / 2f0)
+    particles = Vector{Particle}(undef, length(box_iterator) ^ 2)
+    @inbounds for i in box_iterator, j in box_iterator
+        particles[id] = Particle(
+            Point2f0(i, j),
+            randn(Point2f0) .* 2f0,
+            zeros(Mat2f0),
+            1f0,
+        )
+        id += 1
+    end
+    grid = Matrix{Cell}(undef, grid_resolution, grid_resolution)
+
+    grid, particles
 end
 
 @inline function quadratic_interpolation_weights!(mpm::MPM, cell_δ::Point2f0)
@@ -78,7 +80,7 @@ end
 end
 
 function particles_to_grid!(mpm::MPM)
-    for i in 1:mpm.num_particles
+    @inbounds Threads.@threads for i in 1:mpm.num_particles
         particle = mpm.particles[i]
         # Quadratic interpolation weights.
         cell_idx = floor.(particle.position)
@@ -106,7 +108,7 @@ function particles_to_grid!(mpm::MPM)
 end
 
 function grid_velocity_update!(mpm::MPM)
-    for i in 1:mpm.grid_resolution, j in 1:mpm.grid_resolution
+    @inbounds for i in 1:mpm.grid_resolution, j in 1:mpm.grid_resolution
         cell = mpm.grid[i, j]
         cell.mass ≈ 0 && continue
         # Convert momentum to velocity, apply gravity.
@@ -121,7 +123,7 @@ function grid_velocity_update!(mpm::MPM)
 end
 
 function grid_to_particles!(mpm::MPM)
-    for i in 1:mpm.num_particles
+    @inbounds for i in 1:mpm.num_particles
         particle = mpm.particles[i]
         particle_velocity = Vec2f0(0f0, 0f0)
         # Quadratic interpolation weights.
@@ -146,7 +148,7 @@ function grid_to_particles!(mpm::MPM)
 
             particle_velocity += weighted_velocity
         end
-        particle_affine_momentum = affine_momentum .* 4
+        particle_affine_momentum = affine_momentum .* 4f0
 
         # Advect particle.
         particle_position = particle.position + particle_velocity * mpm.δt
@@ -162,7 +164,7 @@ end
 
 function simulate!(mpm::MPM)
     # Reset grid.
-    for i in 1:mpm.grid_resolution, j in 1:mpm.grid_resolution
+    @inbounds for i in 1:mpm.grid_resolution, j in 1:mpm.grid_resolution
         mpm.grid[i, j] = Cell(Vec2f0(0f0, 0f0), 0f0)
     end
     # Particles-to-Grid: transfer data from particles to grid.
@@ -177,13 +179,14 @@ mutable struct MPMLayer <: Ray.Layer
     controller::Ray.OrthographicCameraController
     mpm::MPM
     simulate::Bool
+    timesteps::Vector{Float32}
 end
 
 function MPMLayer()
     Ray.Renderer2D.init()
     controller = Ray.OrthographicCameraController(1280f0 / 720f0, true)
     mpm = MPM()
-    MPMLayer(controller, mpm, false)
+    MPMLayer(controller, mpm, false, Float32[])
 end
 
 function draw_particles(
@@ -209,6 +212,9 @@ end
 
 function Ray.on_update(cs::MPMLayer, timestep::Float64)
     timestep = Float32(timestep)
+    length(cs.timesteps) >= 50 && popfirst!(cs.timesteps)
+    push!(cs.timesteps, timestep)
+
     Ray.OrthographicCameraModule.on_update(cs.controller, timestep)
 
     cs.simulate && simulate!(cs.mpm)
@@ -217,7 +223,7 @@ function Ray.on_update(cs::MPMLayer, timestep::Float64)
     Ray.Backend.clear()
 
     Ray.Renderer2D.begin_scene(cs.controller.camera)
-    draw_particles(cs.mpm)
+    draw_particles(cs.mpm; particle_size=0.01f0)
     Ray.Renderer2D.end_scene()
 end
 
@@ -231,27 +237,7 @@ function Ray.EngineCore.on_event(cs::MPMLayer, event::Ray.Event.KeyPressed)
     end
 
     if event.key == GLFW.KEY_R
-        spacing = 0.5f0
-        box_size = 16f0
-        grid_center = cs.mpm.grid_resolution / 2f0
-
-        box_iterator = (grid_center - box_size / 2f0):spacing:(grid_center + box_size / 2f0)
-        tmp_positions = Point2f0[
-            Point2f0(i, j)
-            for i in box_iterator, j in box_iterator
-        ]
-        # Initialize particles with random velocities.
-        num_particles = length(tmp_positions)
-        particles = Particle[
-            Particle(
-                tmp_positions[i],
-                randn(Point2f0) .* 1.5f0,
-                zeros(Mat2f0),
-                1f0,
-            ) for i in 1:num_particles
-        ]
-        grid = Matrix{Cell}(undef, cs.mpm.grid_resolution, cs.mpm.grid_resolution)
-
+        grid, particles = reset_particles(cs.mpm.grid_resolution, 0.5f0, 16f0)
         cs.mpm.particles = particles
         cs.mpm.grid = grid
     end
@@ -265,8 +251,10 @@ function Ray.on_imgui_render(cs::MPMLayer, timestep::Float64)
     CImGui.Begin("MPM Info")
     CImGui.Text("Grid resolution: $(cs.mpm.grid_resolution)x$(cs.mpm.grid_resolution)")
     CImGui.Text("Total particles: $(cs.mpm.num_particles)")
-    CImGui.Text("Press [P] to play/pause simulation.")
-    CImGui.Text("Press [R] to reset simulation.")
+    CImGui.PlotLines("", cs.timesteps, length(cs.timesteps))
+
+    CImGui.Text("[P] to play/pause simulation.")
+    CImGui.Text("[R] to reset simulation.")
     CImGui.End()
 end
 

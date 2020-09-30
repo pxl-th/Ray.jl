@@ -27,7 +27,7 @@ struct QuadVertex
 end
 
 @with_kw mutable struct Renderer2DData
-    max_quads::UInt32 = 10_000
+    max_quads::UInt32 = 50_000
     max_vertices::UInt32 = max_quads * 4
     max_indices::UInt32 = max_quads * 6
 
