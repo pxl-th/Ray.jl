@@ -1,6 +1,7 @@
 module Fluid
 
 using LinearAlgebra: I, norm, tr
+using StaticArrays: SVector
 using GeometryBasics
 
 using CImGui
@@ -30,7 +31,6 @@ mutable struct MPM
     particles::Vector{Particle}
     grid::Matrix{Cell}
 
-    weights::Vector{Point2f0}
     # Fluid parameters.
     rest_density::Float32
     dynamic_viscosity::Float32
@@ -57,7 +57,6 @@ mutable struct MPM
             grid_resolution, num_cells, length(particles),
             δt, gravity,
             particles, grid,
-            Vector{Point2f0}(undef, 3),
             rest_density, dynamic_viscosity,
             eos_stiffness, eos_power,
             box_size, step_size,
@@ -84,34 +83,39 @@ function reset_particles(
     grid, particles
 end
 
-function estimate_volume(mpm::MPM, particle::Particle, cell_idx::Point2f0)
+function estimate_volume(
+    mpm::MPM, particle::Particle, cell_idx::Point2f0,
+    weights::SVector{3, Point2f0},
+)
     density::Float32 = 0f0
     @inbounds for gx in 0:2, gy in 0:2
         cell_position = Point2f0(cell_idx[1] + gx - 1, cell_idx[2] + gy - 1)
         cell_position = (cell_position .+ 1) .|> Int32
-        weight = mpm.weights[gx + 1][1] * mpm.weights[gy + 1][2]
+        weight = weights[gx + 1][1] * weights[gy + 1][2]
         density += mpm.grid[cell_position...].mass * weight
     end
     particle.mass / density, density
 end
 
-@inline function quadratic_interpolation_weights!(mpm::MPM, cell_δ::Point2f0)
-    mpm.weights[1] = 0.5f0 .* (0.5f0 .- cell_δ) .^ 2
-    mpm.weights[2] = 0.75f0 .- cell_δ .^ 2
-    mpm.weights[3] = 0.5f0 .* (0.5f0 .+ cell_δ) .^ 2
+@inline function quadratic_interpolation_weights(cell_δ::Point2f0)
+    SVector{3, Point2f0}(
+        0.5f0 .* (0.5f0 .- cell_δ) .^ 2,
+        0.75f0 .- cell_δ .^ 2,
+        0.5f0 .* (0.5f0 .+ cell_δ) .^ 2,
+    )
 end
 
 function particles_to_grid_init!(mpm::MPM)
-    @inbounds for i in 1:mpm.num_particles
+    @inbounds Threads.@threads for i in 1:mpm.num_particles
         particle = mpm.particles[i]
         # Quadratic interpolation weights.
         cell_idx = floor.(particle.position)
         cell_δ = particle.position .- cell_idx .- 0.5f0
-        quadratic_interpolation_weights!(mpm, cell_δ)
+        weights = quadratic_interpolation_weights(cell_δ)
         # Calculate weights for 3x3 immediate neighbouring cells
         # on the grid using interpolation function.
         for gx in 0:2, gy in 0:2
-            weight = mpm.weights[gx + 1][1] * mpm.weights[gy + 1][2]
+            weight = weights[gx + 1][1] * weights[gy + 1][2]
             cell_position = Point2f0(cell_idx[1] + gx - 1, cell_idx[2] + gy - 1)
             cell_distance = (cell_position .- particle.position) .+ 0.5f0
             # Transform to 1-based indexing.
@@ -130,14 +134,14 @@ function particles_to_grid_init!(mpm::MPM)
 end
 
 function particles_to_grid!(mpm::MPM)
-    @inbounds for i in 1:mpm.num_particles
+    @inbounds Threads.@threads for i in 1:mpm.num_particles
         particle = mpm.particles[i]
         # Quadratic interpolation weights.
         cell_idx = floor.(particle.position)
         cell_δ = particle.position .- cell_idx .- 0.5f0
-        quadratic_interpolation_weights!(mpm, cell_δ)
+        weights = quadratic_interpolation_weights(cell_δ)
         # Estimate particle's volume.
-        volume, density = estimate_volume(mpm, particle, cell_idx)
+        volume, density = estimate_volume(mpm, particle, cell_idx, weights)
         pressure = mpm.eos_stiffness * (
             ((density / mpm.rest_density) ^ mpm.eos_power) - 1
         )
@@ -155,7 +159,7 @@ function particles_to_grid!(mpm::MPM)
         # Calculate weights for 3x3 immediate neighbouring cells
         # on the grid using interpolation function.
         for gx in 0:2, gy in 0:2
-            weight = mpm.weights[gx + 1][1] * mpm.weights[gy + 1][2]
+            weight = weights[gx + 1][1] * weights[gy + 1][2]
             cell_position = Point2f0(cell_idx[1] + gx - 1, cell_idx[2] + gy - 1)
             cell_distance = (cell_position .- particle.position) .+ 0.5f0
             # Transform to 1-based indexing.
@@ -187,17 +191,17 @@ function grid_velocity_update!(mpm::MPM)
 end
 
 function grid_to_particles!(mpm::MPM)
-    @inbounds for i in 1:mpm.num_particles
+    @inbounds Threads.@threads for i in 1:mpm.num_particles
         particle = mpm.particles[i]
         particle_velocity = Vec2f0(0f0, 0f0)
         # Quadratic interpolation weights.
         cell_idx = floor.(particle.position)
         cell_δ = particle.position .- cell_idx .- 0.5f0
-        quadratic_interpolation_weights!(mpm, cell_δ)
+        weights = quadratic_interpolation_weights(cell_δ)
         # Contruct affine per-particle momentum from APIC / MLS-MPM.
         affine_momentum = zeros(Mat2f0)
         for gx in 0:2, gy in 0:2
-            weight = mpm.weights[gx + 1][1] * mpm.weights[gy + 1][2]
+            weight = weights[gx + 1][1] * weights[gy + 1][2]
             cell_position = Point2f0(cell_idx[1] + gx - 1, cell_idx[2] + gy - 1)
             cell_distance = (cell_position .- particle.position) .+ 0.5f0
             # Transform to 1-based indexing.
@@ -215,6 +219,7 @@ function grid_to_particles!(mpm::MPM)
         # Advect particle.
         particle_position = particle.position + particle_velocity * mpm.δt
         particle_position = clamp.(particle_position, 1, mpm.grid_resolution - 2)
+
         # Softened boundary condition.
         position_shift = particle_position + particle_velocity
         wall_min = 3f0
@@ -261,14 +266,13 @@ mutable struct MPMLayer <: Ray.Layer
     controller::Ray.OrthographicCameraController
     mpm::MPM
     simulate::Bool
-    timesteps::Vector{Float32}
 end
 
 function MPMLayer()
     Ray.Renderer2D.init()
     controller = Ray.OrthographicCameraController(1280f0 / 720f0, true)
-    mpm = MPM(;grid_resolution=64 |> Int32, box_size=32f0)
-    MPMLayer(controller, mpm, false, Float32[])
+    mpm = MPM(;grid_resolution=32 |> Int32, box_size=16f0)
+    MPMLayer(controller, mpm, false)
 end
 
 function draw_particles(
@@ -294,9 +298,6 @@ end
 
 function Ray.on_update(cs::MPMLayer, timestep::Float64)
     timestep = Float32(timestep)
-    length(cs.timesteps) >= 50 && popfirst!(cs.timesteps)
-    push!(cs.timesteps, timestep)
-
     Ray.OrthographicCameraModule.on_update(cs.controller, timestep)
 
     cs.simulate && simulate!(cs.mpm)
@@ -319,7 +320,7 @@ function Ray.EngineCore.on_event(cs::MPMLayer, event::Ray.Event.KeyPressed)
     end
     if event.key == GLFW.KEY_R
         grid, particles = reset_particles(
-            cs.mpm.grid_resolution, mpm.step_stize, mpm.box_size,
+            cs.mpm.grid_resolution, cs.mpm.step_size, cs.mpm.box_size,
         )
         cs.mpm.particles = particles
         cs.mpm.grid = grid
@@ -334,7 +335,6 @@ function Ray.on_imgui_render(cs::MPMLayer, timestep::Float64)
     CImGui.Begin("Fluid Simulation")
     CImGui.Text("Grid resolution: $(cs.mpm.grid_resolution)x$(cs.mpm.grid_resolution)")
     CImGui.Text("Total particles: $(cs.mpm.num_particles)")
-    CImGui.PlotLines("", cs.timesteps, length(cs.timesteps))
 
     CImGui.Text("[P] to play/pause simulation.")
     CImGui.Text("[R] to reset simulation.")
