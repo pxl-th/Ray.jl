@@ -56,30 +56,34 @@ mutable struct MPM
         # Scatter particle mass to the grid.
         particles_to_grid!(mpm)
         # Estimate initial per-particle volume.
-        @inbounds for i in 1:mpm.num_particles
-            particle = mpm.particles[i]
-            # Quadratic interpolation weights.
-            cell_idx = floor.(particle.position)
-            cell_δ = particle.position .- cell_idx .- 0.5f0
-            quadratic_interpolation_weights!(mpm, cell_δ)
-            # Accumulate density around immediate neighbourhood.
-            density::Float32 = 0f0
-            for gx in 0:2, gy in 0:2
-                cell_position = Point2f0(cell_idx[1] + gx - 1, cell_idx[2] + gy - 1)
-                cell_position = (cell_position .+ 1) .|> Int32
-                weight = mpm.weights[gx + 1][1] * mpm.weights[gy + 1][2]
-                density += mpm.grid[cell_position...].mass * weight
-            end
-            # Initial per-particle volume estimate.
-            initial_volume = particle.mass / density
-            mpm.particles[i] = Particle(
-                particle.position, particle.velocity,
-                particle.affine_momentum, particle.deformation_gradient,
-                particle.mass, initial_volume,
-            )
-        end
+        estimate_volume!(mpm)
 
         mpm
+    end
+end
+
+function estimate_volume!(mpm::MPM)
+    @inbounds for i in 1:mpm.num_particles
+        particle = mpm.particles[i]
+        # Quadratic interpolation weights.
+        cell_idx = floor.(particle.position)
+        cell_δ = particle.position .- cell_idx .- 0.5f0
+        quadratic_interpolation_weights!(mpm, cell_δ)
+        # Accumulate density around immediate neighbourhood.
+        density::Float32 = 0f0
+        for gx in 0:2, gy in 0:2
+            cell_position = Point2f0(cell_idx[1] + gx - 1, cell_idx[2] + gy - 1)
+            cell_position = (cell_position .+ 1) .|> Int32
+            weight = mpm.weights[gx + 1][1] * mpm.weights[gy + 1][2]
+            density += mpm.grid[cell_position...].mass * weight
+        end
+        # Initial per-particle volume estimate.
+        initial_volume = particle.mass / density
+        mpm.particles[i] = Particle(
+            particle.position, particle.velocity,
+            particle.affine_momentum, particle.deformation_gradient,
+            particle.mass, initial_volume,
+        )
     end
 end
 
@@ -291,28 +295,7 @@ function Ray.EngineCore.on_event(cs::MPMLayer, event::Ray.Event.KeyPressed)
         # Scatter particle mass to the grid.
         particles_to_grid!(cs.mpm)
         # Estimate initial per-particle volume.
-        @inbounds for i in 1:cs.mpm.num_particles
-            particle = cs.mpm.particles[i]
-            # Quadratic interpolation weights.
-            cell_idx = floor.(particle.position)
-            cell_δ = particle.position .- cell_idx .- 0.5f0
-            quadratic_interpolation_weights!(cs.mpm, cell_δ)
-            # Accumulate density around immediate neighbourhood.
-            density::Float32 = 0f0
-            for gx in 0:2, gy in 0:2
-                cell_position = Point2f0(cell_idx[1] + gx - 1, cell_idx[2] + gy - 1)
-                cell_position = (cell_position .+ 1) .|> Int32
-                weight = cs.mpm.weights[gx + 1][1] * cs.mpm.weights[gy + 1][2]
-                density += cs.mpm.grid[cell_position...].mass * weight
-            end
-            # Initial per-particle volume estimate.
-            initial_volume = particle.mass / density
-            cs.mpm.particles[i] = Particle(
-                particle.position, particle.velocity,
-                particle.affine_momentum, particle.deformation_gradient,
-                particle.mass, initial_volume,
-            )
-        end
+        estimate_volume!(cs.mpm)
     end
 end
 
