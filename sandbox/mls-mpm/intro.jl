@@ -1,10 +1,10 @@
 module Intro
 
 using LinearAlgebra: I, norm
-using GLFW
-using CImGui
-using CImGui.CSyntax
 using GeometryBasics
+
+using CImGui
+using GLFW
 using Ray
 
 struct Particle
