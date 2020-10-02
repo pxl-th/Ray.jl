@@ -79,16 +79,10 @@ end
 function validate_shader(shader_id::UInt32)
     success = @ref glGetShaderiv(shader_id, GL_COMPILE_STATUS, RepInt32)
     success == GL_TRUE && return
-
-    error_token = "ERROR: "
-    error_log = getInfoLog(shader_id)
-    error_log_lines = map(
-        s -> strip(Base.replace(s, error_token => "")),
-        split(error_log, error_token, keepempty=false))
-    error("Failed to compile shader: \n $error_log_lines")
+    error("Failed to compile shader: \n$(get_info_log(shader_id))")
 end
 
-function getInfoLog(object::UInt32)::String
+function get_info_log(object::UInt32)::String
     # Return the info log for object, whether it be a shader or a program.
     is_shader = glIsShader(object)
     getiv = is_shader == GL_TRUE ? glGetShaderiv : glGetProgramiv
@@ -129,7 +123,7 @@ function create_program(shaders::Vector{UInt32})::UInt32
     success = @ref glGetProgramiv(program_id, GL_LINK_STATUS, RepInt32)
     if success == GL_FALSE
         glDeleteProgram(program_id)
-        error("Failed to link shader program.\n$(getInfoLog(program_id))")
+        error("Failed to link shader program.\n$(get_info_log(program_id))")
     end
 
     program_id

@@ -21,6 +21,7 @@ include("engine/core/input.jl")
 include("engine/core/Transformations.jl")
 
 include("engine/renderer/OrthographicCamera.jl")
+include("engine/renderer/PerspectiveCamera.jl")
 include("engine/renderer/Renderer.jl")
 include("engine/renderer/Renderer2D.jl")
 
@@ -29,6 +30,7 @@ include("engine/imgui/ImGUI.jl")
 
 using .Transformations
 using .OrthographicCameraModule
+using .PerspectiveCameraModule
 using .Event
 using .Input
 using .Renderer

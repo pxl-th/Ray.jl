@@ -72,7 +72,7 @@ function reset_particles(
     grid_center = grid_resolution / 2f0
     box_iterator = (grid_center - box_size / 2f0):spacing:(grid_center + box_size / 2f0)
     particles = Particle[
-        Particle(Point2f0(i, j + 3f0), Vec2f0(0f0, 2f0), zeros(Mat2f0), 1f0)
+        Particle(Point2f0(i + 12f0, j + 12f0), Vec2f0(2f0, 2f0), zeros(Mat2f0), 1f0)
         for i in box_iterator for j in box_iterator
     ]
     grid = Cell[
@@ -271,7 +271,7 @@ end
 function MPMLayer()
     Ray.Renderer2D.init()
     controller = Ray.OrthographicCameraController(1280f0 / 720f0, true)
-    mpm = MPM(;grid_resolution=32 |> Int32, box_size=16f0)
+    mpm = MPM(;grid_resolution=64 |> Int32, box_size=32f0, δt=0.2f0)
     MPMLayer(controller, mpm, false)
 end
 
@@ -286,8 +286,9 @@ function draw_particles(
             particle.position ./ Float32(mpm.grid_resolution) .- 0.5f0
         )
         particle_velocity = particle.velocity - Vec2f0(0f0, mpm.gravity)
-        σ = clamp(norm(particle_velocity) / max_velocity, 0f0, 1f0)
-        particle_color = (1 - σ) * base_color + σ * top_color
+        σ = clamp(norm(particle_velocity, 1) / max_velocity, 0f0, 1f0)
+        ϵ = rand(Float32) / 15f0
+        particle_color = (1 - σ - ϵ) * base_color + (σ + ϵ) * top_color
 
         Ray.Renderer2D.draw_quad(
             Vec3f0(world_position..., 0f0), Vec2f0(particle_size),
@@ -332,13 +333,12 @@ function Ray.EngineCore.on_event(cs::MPMLayer, event::Ray.Event.WindowResize)
 end
 
 function Ray.on_imgui_render(cs::MPMLayer, timestep::Float64)
-    CImGui.Begin("Fluid Simulation")
-    CImGui.Text("Grid resolution: $(cs.mpm.grid_resolution)x$(cs.mpm.grid_resolution)")
-    CImGui.Text("Total particles: $(cs.mpm.num_particles)")
-
-    CImGui.Text("[P] to play/pause simulation.")
-    CImGui.Text("[R] to reset simulation.")
-    CImGui.End()
+    # CImGui.Begin("Fluid Simulation")
+    # CImGui.Text("Grid resolution: $(cs.mpm.grid_resolution)x$(cs.mpm.grid_resolution)")
+    # CImGui.Text("Total particles: $(cs.mpm.num_particles)")
+    # CImGui.Text("[P] to play/pause simulation.")
+    # CImGui.Text("[R] to reset simulation.")
+    # CImGui.End()
 end
 
 function main()

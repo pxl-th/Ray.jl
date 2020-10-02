@@ -2,7 +2,7 @@ module Transformations
 export translation, rotation_x, rotation_y, rotation_z, orthographic,
     scaling, perspective, look_at, rot_at
 
-using LinearAlgebra: I, normalize
+using LinearAlgebra: I, normalize, ×
 using StaticArrays
 
 function translation(x::T, y::T, z::T)::SMatrix{4, 4, Float32} where T <: Number
@@ -75,7 +75,7 @@ function perspective(
     (znear == zfar) &&
         error("znear ($znear) must be different from zfar ($zfar)")
 
-    h = tan(fovy / 360.0 * π) * znear
+    h = tan(fovy / 360f0 * π |> Float32) * znear
     w = h * aspect
     _frustum(-w, w, -h, h, znear, zfar)
 end
