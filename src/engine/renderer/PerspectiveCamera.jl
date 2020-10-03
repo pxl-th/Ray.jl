@@ -38,13 +38,8 @@ mutable struct PerspectiveCamera
             position,
             zeros(Vec3f0), zeros(Vec3f0), zeros(Vec3f0),
             Vec3f0(0f0, 1f0, 0f0),
-            -90f0, 0f0,
+            0f0, 0f0,
         ) |> _update_camera!
-
-        camera.view = look_at(
-            camera.position, camera.position + camera.front, camera.up,
-        )
-        camera.view_projection = camera.projection * camera.view
 
         camera
     end
@@ -60,6 +55,11 @@ function _update_camera!(camera::PerspectiveCamera)::PerspectiveCamera
     ) |> normalize
     camera.right = (camera.front × camera.world_up) |> normalize
     camera.up = (camera.right × camera.front) |> normalize
+
+    camera.view = look_at(
+        camera.position, camera.position + camera.front, camera.up,
+    )
+    camera.view_projection = camera.projection * camera.view
 
     camera
 end
@@ -132,7 +132,6 @@ function on_update(controller::PerspectiveCameraController, timestep::Float32)
     elseif is_key_pressed(GLFW.KEY_S)
         controller.camera_position -= speed * controller.camera.front
     end
-
     if is_key_pressed(GLFW.KEY_A)
         controller.camera_position -= speed * normalize(
             controller.camera.front × controller.camera.up,
@@ -144,7 +143,10 @@ function on_update(controller::PerspectiveCameraController, timestep::Float32)
     end
 
     controller.mouse_pos = Point2f0(get_mouse_position()...)
-    offset = controller.mouse_pos - controller.mouse_last
+    offset = Point2f0(
+        controller.mouse_pos[1] - controller.mouse_last[1],
+        controller.mouse_last[2] - controller.mouse_pos[2],
+    )
     offset *= controller.sensitivity
 
     controller.yaw += offset[1]
@@ -160,8 +162,8 @@ end
 function on_event(
     controller::PerspectiveCameraController, event::Event.MouseScrolled,
 )
-    controller.zoom_level -= event.y_offset * 0.25f0
-    controller.zoom_level = max(0.25f0, controller.zoom_level)
+    controller.zoom_level -= event.y_offset * 0.10f0
+    controller.zoom_level = clamp(controller.zoom_level, 0.20f0, 3.80f0)
 
     set_projection!(
         controller.camera,

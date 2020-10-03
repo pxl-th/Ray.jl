@@ -1,7 +1,7 @@
 module Renderer
 export
     BufferElement, BufferLayout, size, length,
-    submit, begin_scene, end_scene, RendererState,
+    submit, begin_scene, end_scene,
     ShaderLibrary, add!, load!, get, exists
 
 using LinearAlgebra: I
@@ -16,6 +16,7 @@ include("../../backend/opengl/OpenGL.jl")
 using Ray.Input
 using Ray.Event
 using Ray.OrthographicCameraModule
+using Ray.PerspectiveCameraModule
 
 using .Abstractions
 using .OpenGLBackend
@@ -28,28 +29,29 @@ mutable struct SceneData
     view_projection::Mat4f0
 end
 
-struct RendererState
-    scene_data::SceneData
+const State = SceneData(zeros(Mat4f0))
+
+function begin_scene(camera::PerspectiveCamera)
+    State.view_projection = camera.view_projection
 end
 
-function begin_scene(renderer::RendererState, camera::OrthographicCamera)
-    renderer.scene_data.view_projection = camera.view_projection
+function begin_scene(camera::OrthographicCamera)
+    State.view_projection = camera.view_projection
 end
 
-function end_scene(renderer::RendererState) end
+function end_scene() end
 
 function submit(
-    renderer::RendererState, shader::Abstractions.Shader,
+    shader::Abstractions.Shader,
     va::Abstractions.VertexArray, transform::Mat4f0 = Mat4f0(I),
 )
     shader |> Backend.bind
-    Backend.upload_uniform(shader, "u_ViewProjection", renderer.scene_data.view_projection)
-    Backend.upload_uniform(shader, "u_Transform", transform)
+    Backend.upload_uniform(shader, "u_ViewProjection", State.view_projection)
+    Backend.upload_uniform(shader, "u_Model", transform)
 
     va |> Backend.bind
     Backend.draw_indexed(va)
 end
 
-const STATE = RendererState(SceneData(zeros(Mat4f0)))
 
 end
