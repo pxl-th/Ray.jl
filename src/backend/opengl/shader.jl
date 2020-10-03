@@ -61,14 +61,24 @@ function upload_uniform(shader::Shader, name::String, matrix::Mat4f0)
     glUniformMatrix4fv(location, 1, GL_FALSE, matrix)
 end
 
-function upload_uniform(shader::Shader, name::String, value::Vec4f0)
+function upload_uniform(shader::Shader, name::String, value::Union{Vec4f0, Point4f0})
     location = glGetUniformLocation(shader.id, name)
     glUniform4f(location, value[1], value[2], value[3], value[4])
+end
+
+function upload_uniform(shader::Shader, name::String, value::Union{Vec3f0, Point3f0})
+    location = glGetUniformLocation(shader.id, name)
+    glUniform3f(location, value[1], value[2], value[3])
 end
 
 function upload_uniform(shader::Shader, name::String, value::Integer)
     location = glGetUniformLocation(shader.id, name)
     glUniform1i(location, value)
+end
+
+function upload_uniform(shader::Shader, name::String, value::Real)
+    location = glGetUniformLocation(shader.id, name)
+    glUniform1f(location, value)
 end
 
 function upload_uniform(shader::Shader, name::String, values::Vector{T}) where T <: Integer
