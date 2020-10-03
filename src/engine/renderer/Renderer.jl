@@ -1,6 +1,5 @@
 module Renderer
 export
-    get_backend, set_backend,
     BufferElement, BufferLayout, size, length,
     submit, begin_scene, end_scene, RendererState,
     ShaderLibrary, add!, load!, get, exists
@@ -8,7 +7,6 @@ export
 using LinearAlgebra: I
 using StaticArrays
 using GeometryBasics
-
 using GLFW
 
 
@@ -22,10 +20,7 @@ using Ray.OrthographicCameraModule
 using .Abstractions
 using .OpenGLBackend
 
-let backend = OpenGLBackend
-    global get_backend() = backend
-    global set_backend(new_backend) = backend = new_backend
-end
+const Backend = OpenGLBackend
 
 include("shader.jl")
 
@@ -47,12 +42,12 @@ function submit(
     renderer::RendererState, shader::Abstractions.Shader,
     va::Abstractions.VertexArray, transform::Mat4f0 = Mat4f0(I),
 )
-    shader |> get_backend().bind
-    get_backend().upload_uniform(shader, "u_ViewProjection", renderer.scene_data.view_projection)
-    get_backend().upload_uniform(shader, "u_Transform", transform)
+    shader |> Backend.bind
+    Backend.upload_uniform(shader, "u_ViewProjection", renderer.scene_data.view_projection)
+    Backend.upload_uniform(shader, "u_Transform", transform)
 
-    va |> get_backend().bind
-    get_backend().draw_indexed(va)
+    va |> Backend.bind
+    Backend.draw_indexed(va)
 end
 
 const STATE = RendererState(SceneData(zeros(Mat4f0)))

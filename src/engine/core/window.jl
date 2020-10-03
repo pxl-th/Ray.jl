@@ -9,7 +9,7 @@ end
 mutable struct Window
     properties::WindowProps
     window::GLFW.Window
-    context::Renderer.get_backend().Context
+    context::Renderer.Backend.Context
 end
 
 function Window(props::WindowProps)
@@ -25,8 +25,8 @@ function Window(props::WindowProps)
     end
 
     window = GLFW.CreateWindow(props.width, props.height, props.title)
-    context = Renderer.get_backend().Context(window)
-    context |> Renderer.get_backend().init
+    context = Renderer.Backend.Context(window)
+    context |> Renderer.Backend.init
 
     Window(props, window, context)
 end
@@ -83,5 +83,5 @@ set_height(window::Window, height::Int64) = window.properties.height = height
 
 function on_update(window::Window)
     GLFW.PollEvents()
-    window.context |> Renderer.get_backend().swap_buffers
+    window.context |> Renderer.Backend.swap_buffers
 end

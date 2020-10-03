@@ -37,7 +37,7 @@ using .Renderer
 using .EngineCore
 using .ImGUI
 
-Backend = Renderer.get_backend()
+const Backend = Renderer.Backend
 
 mutable struct Application
     window::EngineCore.Window
