@@ -20,11 +20,13 @@ void main() {
 
 #type fragment
 #version 330 core
+
 struct Material {
-    vec3 albedo;
-    float metallic;
-    float roughness;
-    float ao;
+    sampler2D albedo;
+    sampler2D metallic;
+    sampler2D roughness;
+    sampler2D normal;
+    sampler2D ao;
 };
 
 in vec2 v_TexCoord;
@@ -77,12 +79,34 @@ float geometry_smith(vec3 n, vec3 v, vec3 l, float roughness) {
     return ggx1 * ggx2;
 }
 
+vec3 get_normal() {
+    vec3 tangentNormal = texture(u_Material.normal, v_TexCoord).xyz * 2.0 - 1.0;
+
+    vec3 Q1 = dFdx(v_WorldPos);
+    vec3 Q2 = dFdy(v_WorldPos);
+    vec2 st1 = dFdx(v_TexCoord);
+    vec2 st2 = dFdy(v_TexCoord);
+
+    vec3 N = normalize(v_Normal);
+    vec3 T = normalize(Q1 * st2.t - Q2 * st1.t);
+    vec3 B = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangentNormal);
+}
+
 void main() {
-    vec3 n = normalize(v_Normal);
+    vec3 albedo = pow(texture(u_Material.albedo, v_TexCoord).rgb, vec3(2.2));
+    vec3 normal = get_normal();
+    float metallic = texture(u_Material.metallic, v_TexCoord).r;
+    float roughness = texture(u_Material.roughness, v_TexCoord).r;
+    float ao = texture(u_Material.ao, v_TexCoord).r;
+
+    vec3 n = normalize(normal);
     vec3 v = normalize(u_CamPos - v_WorldPos); // Viewer direction.
 
     vec3 f0 = vec3(0.4);
-    f0 = mix(f0, u_Material.albedo, u_Material.metallic);
+    f0 = mix(f0, albedo, metallic);
 
     /* Reflectance equation. */
     vec3 Lo = vec3(0.0);
@@ -97,8 +121,8 @@ void main() {
 
         /* Calculate Cook-Torrance BRDF. */
         vec3 f = fresnel_schlick(clamp(dot(h, v), 0.0, 1.0), f0);
-        float ndf = distribution_ggx(n, h, u_Material.roughness);
-        float g = geometry_smith(n, v, l, u_Material.roughness);
+        float ndf = distribution_ggx(n, h, roughness);
+        float g = geometry_smith(n, v, l, roughness);
 
         vec3 nominator = f * ndf * g;
         float denominator = 4 * max(0.0, dot(n, v)) * max(0.0, dot(n, l));
@@ -106,13 +130,13 @@ void main() {
 
         vec3 ks = f;
         vec3 kd = vec3(1.0) - ks;
-        kd *= 1.0 - u_Material.metallic;
+        kd *= 1.0 - metallic;
 
         float ndotl = max(0.0, dot(n, l));
-        Lo += (kd * u_Material.albedo / PI + specular) * radiance * ndotl;
+        Lo += (kd * albedo / PI + specular) * radiance * ndotl;
     }
 
-    vec3 ambient = vec3(0.03) * u_Material.albedo * u_Material.ao;
+    vec3 ambient = vec3(0.03) * albedo * ao;
     vec3 color = ambient + Lo;
     /* HDR tonemapping. */
     color = color / (color + vec3(1.0));

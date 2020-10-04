@@ -5,6 +5,7 @@ set_clear_color(r, g, b, a) = glClearColor(r, g, b, a)
 function init(window)
     GLFW.SetInputMode(window, GLFW.CURSOR, GLFW.CURSOR_DISABLED)
 
+    glEnable(GL_MULTISAMPLE)
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 

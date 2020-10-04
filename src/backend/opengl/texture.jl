@@ -9,10 +9,10 @@ struct Texture2D
     type::UInt32
 end
 
-function Texture2D(width::Integer, height::Integer, type::UInt32 = GL_UNSIGNED_BYTE)
-    internal_format = GL_RGBA8
-    data_format = GL_RGBA
-
+function Texture2D(
+    width::Integer, height::Integer, type::UInt32 = GL_UNSIGNED_BYTE;
+    internal_format::UInt32 = GL_RGBA8, data_format::UInt32 = GL_RGBA,
+)
     id = @ref glGenTextures(1, RepUInt32)
     glBindTexture(GL_TEXTURE_2D, id)
     glTexImage2D(
@@ -34,8 +34,11 @@ function Texture2D(path::String, type::UInt32 = GL_UNSIGNED_BYTE)
     if length(pixel_type) == 3
         internal_format = GL_RGB8
         data_format = GL_RGB
+    elseif length(pixel_type) == 1
+        internal_format = GL_RED
+        data_format = GL_RED
     elseif length(pixel_type) == 4
-        internal_format = GL_RGBA
+        internal_format = GL_RGBA8
         data_format = GL_RGBA
     end
 
@@ -47,7 +50,8 @@ function Texture2D(path::String, type::UInt32 = GL_UNSIGNED_BYTE)
     )
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -60,7 +64,16 @@ function bind(texture::Texture2D, slot::Integer = 0)
 end
 
 function set_data!(texture::Texture2D, data::AbstractArray, size::Integer)
-    bpp = texture.data_format == GL_RGBA ? 4 : 3
+    if texture.data_format == GL_RGBA
+        bpp = 4
+    elseif texture.data_format == GL_RGB
+        bpp = 3
+    elseif texture.data_format == GL_RED
+        bpp = 1
+    else
+        error("Unknown data format $(texture.data_format)")
+    end
+
     (size != bpp * texture.width * texture.height) &&
         error("Data must be entire texture.")
 
