@@ -13,6 +13,7 @@ include("buffer.jl")
 include("texture.jl")
 include("shader.jl")
 include("vertex_array.jl")
+include("framebuffer.jl")
 
 include("renderer_api.jl")
 

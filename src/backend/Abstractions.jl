@@ -26,6 +26,19 @@ function delete(::VertexArray) end
 function add_vertex_buffer(::VertexArray, ::VertexBuffer) end
 function set_index_buffer(::VertexArray, ::IndexBuffer) end
 
+struct FramebufferSpec
+    width::UInt32
+    height::UInt32
+    samples::UInt32
+end
+
+abstract type Framebuffer end
+function bind(::Framebuffer) end
+function unbind(::Framebuffer) end
+function recreate(::Framebuffer, ::FramebufferSpec) end
+function resize!(::Framebuffer, width::UInt32, height::UInt32) end
+function delete(::Framebuffer) end
+
 abstract type Shader end
 
 function bind(::Shader) end
@@ -68,5 +81,6 @@ function _calculate_stride_and_offset!(
     end
     UInt32(stride)
 end
+
 
 end

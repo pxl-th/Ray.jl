@@ -12,6 +12,7 @@ end
 function Texture2D(
     width::Integer, height::Integer, type::UInt32 = GL_UNSIGNED_BYTE;
     internal_format::UInt32 = GL_RGBA8, data_format::UInt32 = GL_RGBA,
+    kwargs...,
 )
     id = @ref glGenTextures(1, RepUInt32)
     glBindTexture(GL_TEXTURE_2D, id)
@@ -20,15 +21,11 @@ function Texture2D(
         width, height, 0, data_format, type, C_NULL,
     )
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
+    _set_texture_parameters(kwargs...)
     Texture2D(id, width, height, "", internal_format, data_format, type)
 end
 
-function Texture2D(path::String, type::UInt32 = GL_UNSIGNED_BYTE)
+function Texture2D(path::String, type::UInt32 = GL_UNSIGNED_BYTE; kwargs...)
     data, width, height, pixel_type = load_image(path, true)
 
     if length(pixel_type) == 3
@@ -49,13 +46,18 @@ function Texture2D(path::String, type::UInt32 = GL_UNSIGNED_BYTE)
         width, height, 0, data_format, type, data,
     )
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
+    _set_texture_parameters(kwargs...)
     Texture2D(id, width, height, path, internal_format, data_format, type)
+end
+
+function _set_texture_parameters(;
+    min_filter::UInt32 = GL_LINEAR, mag_filter::UInt32 = GL_LINEAR,
+    wrap_s::UInt32 = GL_REPEAT, wrap_t::UInt32 = GL_REPEAT,
+)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_s)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_t)
 end
 
 function bind(texture::Texture2D, slot::Integer = 0)
