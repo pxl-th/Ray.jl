@@ -110,16 +110,51 @@ function upload_uniform(
     Ray.Backend.upload_uniform(shader, "$name.ao", slot + 4)
 end
 
+function get_screen_plane()
+    data = Float32[
+        -1,-1, 0, 0, 0,
+         1,-1, 0, 1, 0,
+         1, 1, 0, 1, 1,
+        -1, 1, 0, 0, 1,
+    ]
+    indices = UInt32[0, 1, 2, 2, 3, 0]
+
+    va = Ray.Backend.VertexArray()
+    vb = Ray.Backend.VertexBuffer(data, sizeof(data))
+    ib = Ray.Backend.IndexBuffer(indices)
+
+    Ray.Backend.set_layout(vb, Ray.Renderer.BufferLayout([
+        Ray.Renderer.BufferElement(Point3f0, "a_Position"),
+        Ray.Renderer.BufferElement(Point2f0, "a_TexCoord"),
+    ]))
+    Ray.Backend.add_vertex_buffer(va, vb)
+    Ray.Backend.set_index_buffer(va, ib)
+
+    va
+end
+
 mutable struct CustomLayer <: Ray.Layer
+    fb::Ray.Backend.Framebuffer
+    screen::Ray.Backend.VertexArray
+    screen_shader::Ray.Backend.Shader
+
     controller::Ray.PerspectiveCameraController
+
     va::Ray.Backend.VertexArray
     shader::Ray.Backend.Shader
     material::Material
+
     lights::Vector{Light}
 end
 
-function CustomLayer()
-    controller = Ray.PerspectiveCameraController(;aspect_ratio=1280f0 / 720f0, speed=10f0)
+function CustomLayer(width::Integer, height::Integer)
+    screen = get_screen_plane()
+    screen_shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\framebuffer.glsl")
+    fb = Ray.Backend.Framebuffer(Ray.Renderer.FramebufferSpec(width, height, 1))
+
+    controller = Ray.PerspectiveCameraController(
+        aspect_ratio=Float32(width / height), speed=10f0,
+    )
     va = uv_sphere()
 
     albedo = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\rust\rustediron2_basecolor.png")
@@ -132,10 +167,13 @@ function CustomLayer()
     material = Material(albedo, metallic, roughness, normal, ao)
     shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\pbr-color.glsl")
 
-    lights = Light[
-        Light(Point3f0(0f0, 0f0, 10f0), Point3f0(150f0, 150f0, 150f0)),
-    ]
-    CustomLayer(controller, va, shader, material, lights)
+    lights = [Light(Point3f0(0f0, 0f0, 10f0), Point3f0(150f0, 150f0, 150f0))]
+    CustomLayer(
+        fb, screen, screen_shader,
+        controller,
+        va, shader, material,
+        lights,
+    )
 end
 
 function Ray.on_update(cs::CustomLayer, timestep::Float64)
@@ -143,6 +181,9 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
 
     Ray.PerspectiveCameraModule.on_update(cs.controller, timestep)
 
+    cs.fb |> Ray.Backend.bind
+
+    Ray.Backend.enable_depth()
     Ray.Backend.set_clear_color(0.9, 0.9, 0.9, 1)
     Ray.Backend.clear()
 
@@ -157,8 +198,20 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     end
 
     Ray.Renderer.submit(cs.shader, cs.va)
-
     Ray.Renderer.end_scene()
+    cs.fb |> Ray.Backend.unbind
+
+    # Render screen.
+    Ray.Backend.disable_depth()
+    Ray.Backend.set_clear_color(0, 0, 0, 1)
+    Ray.Backend.clear(GL_COLOR_BUFFER_BIT)
+
+    cs.screen_shader |> Ray.Backend.bind
+    Ray.Backend.bind(cs.fb.color_attachment, 0)
+    Ray.Backend.upload_uniform(cs.screen_shader, "u_ScreenTexture", 0)
+
+    cs.screen |> Ray.Backend.bind
+    cs.screen |> Ray.Backend.draw_indexed
 end
 
 function Ray.EngineCore.on_event(cs::CustomLayer, event::Ray.Event.MouseScrolled)
@@ -167,17 +220,22 @@ end
 
 function Ray.EngineCore.on_event(cs::CustomLayer, event::Ray.Event.WindowResize)
     Ray.PerspectiveCameraModule.on_event(cs.controller, event)
+    Ray.Backend.resize!(cs.fb, event.width |> UInt32, event.height |> UInt32)
 end
 
 function Ray.on_imgui_render(cs::CustomLayer, timestep::Float64)
-    CImGui.Begin("Control")
-    CImGui.Text("Henlo")
-    CImGui.End()
+    # CImGui.Begin("Control")
+    # CImGui.Text("Henlo")
+    # CImGui.End()
 end
 
 function main()
     application = Ray.Application()
-    Ray.push_layer(application.layer_stack, CustomLayer())
+    layer = CustomLayer(
+        application.window.properties.width,
+        application.window.properties.height,
+    )
+    Ray.push_layer(application.layer_stack, layer)
     application |> Ray.run
 end
 main()

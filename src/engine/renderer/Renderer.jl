@@ -50,7 +50,7 @@ function submit(
     Backend.upload_uniform(shader, "u_Model", transform)
 
     va |> Backend.bind
-    Backend.draw_indexed(va)
+    va |> Backend.draw_indexed
 end
 
 

@@ -1,7 +1,7 @@
 mutable struct Framebuffer <: Abstractions.Framebuffer
     id::UInt32
-    color_attachment::UInt32
-    depth_attachment::UInt32
+    color_attachment::Texture2D
+    depth_attachment::Texture2D
     spec::Abstractions.FramebufferSpec
 
     function Framebuffer(spec::Abstractions.FramebufferSpec)
@@ -11,12 +11,16 @@ mutable struct Framebuffer <: Abstractions.Framebuffer
 end
 
 function _recreate(spec::Abstractions.FramebufferSpec)
-    id = @ref glGenRenderbuffers(1, RepUInt32)
-    glBindRenderbuffer(id)
+    id = @ref glGenFramebuffers(1, RepUInt32)
+    glBindFramebuffer(GL_FRAMEBUFFER, id)
 
-    color_attachment = Texture2D(spec.width, spec.height)
+    color_attachment = Texture2D(
+        spec.width, spec.height,
+        internal_format=GL_RGB8, data_format=GL_RGB,
+    )
     depth_attachment = Texture2D(
-        spec.width, spec.height, internal_format=GL_DEPTH24_STENCIL8,
+        spec.width, spec.height, GL_UNSIGNED_INT_24_8,
+        internal_format=GL_DEPTH24_STENCIL8, data_format=GL_DEPTH_STENCIL,
     )
 
     glFramebufferTexture2D(
@@ -29,6 +33,7 @@ function _recreate(spec::Abstractions.FramebufferSpec)
     )
 
     !is_complete() && error("Framebuffer is incomplete.")
+    glBindFramebuffer(GL_FRAMEBUFFER, 0)
     id, color_attachment, depth_attachment
 end
 
@@ -48,7 +53,7 @@ function resize!(fb::Framebuffer, width::UInt32, height::UInt32)
     delete(fb)
 
     fb.spec = Abstractions.FramebufferSpec(width, height, fb.spec.samples)
-    id, color_attachment, depth_attachment = _recreate(spec)
+    id, color_attachment, depth_attachment = _recreate(fb.spec)
 
     fb.id = id
     fb.color_attachment = color_attachment

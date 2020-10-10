@@ -1,5 +1,5 @@
 module Abstractions
-export BufferLayout, BufferElement
+export BufferLayout, BufferElement, FramebufferSpec
 
 abstract type AbstractContext end
 
