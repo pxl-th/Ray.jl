@@ -25,18 +25,31 @@ function Texture2D(
     Texture2D(id, width, height, "", internal_format, data_format, type)
 end
 
-function Texture2D(path::String, type::UInt32 = GL_UNSIGNED_BYTE; kwargs...)
+function Texture2D(
+    path::String, type::UInt32 = GL_UNSIGNED_BYTE;
+    internal_format::Union{Nothing, UInt32} = nothing,
+    data_format::Union{Nothing, UInt32} = nothing,
+    kwargs...,
+)
     data, width, height, pixel_type = load_image(path, true)
 
-    if length(pixel_type) == 3
-        internal_format = GL_RGB8
-        data_format = GL_RGB
-    elseif length(pixel_type) == 1
-        internal_format = GL_RED
-        data_format = GL_RED
-    elseif length(pixel_type) == 4
-        internal_format = GL_RGBA8
-        data_format = GL_RGBA
+    if internal_format ≡ nothing
+        if length(pixel_type) == 3
+            internal_format = GL_RGB8
+        elseif length(pixel_type) == 1
+            internal_format = GL_RED
+        elseif length(pixel_type) == 4
+            internal_format = GL_RGBA8
+        end
+    end
+    if data_format ≡ nothing
+        if length(pixel_type) == 3
+            data_format = GL_RGB
+        elseif length(pixel_type) == 1
+            data_format = GL_RED
+        elseif length(pixel_type) == 4
+            data_format = GL_RGBA
+        end
     end
 
     id = @ref glGenTextures(1, RepUInt32)

@@ -26,5 +26,7 @@ function draw_indexed(
     va::VertexArray, index_count::Union{UInt32, Nothing} = nothing,
 )
     count = index_count ≡ nothing ? va.index_buffer.count : index_count
-    glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, C_NULL)
+    glDrawElements(
+        va.index_buffer.primitive_type, count, GL_UNSIGNED_INT, C_NULL,
+    )
 end

@@ -1,14 +1,23 @@
 mutable struct Framebuffer <: Abstractions.Framebuffer
     id::UInt32
-    color_attachment::Texture2D
-    depth_attachment::Texture2D
+    color_attachment::Union{Texture2D, Nothing}
+    depth_attachment::Union{Texture2D, Nothing}
     spec::Abstractions.FramebufferSpec
 
-    function Framebuffer(spec::Abstractions.FramebufferSpec)
-        id, color_attachment, depth_attachment = _recreate(spec)
-        new(id, color_attachment, depth_attachment, spec)
-    end
 end
+
+function Framebuffer(spec::Abstractions.FramebufferSpec)
+    id, color_attachment, depth_attachment = _recreate(spec)
+    Framebuffer(id, color_attachment, depth_attachment, spec)
+end
+
+"""
+TODO:
+- support for arbitrary amount of attachments
+- create empty as well as supplied with attachments (store in dict)
+- resizable or not (by default --- not)
+- ditch specs
+"""
 
 function _recreate(spec::Abstractions.FramebufferSpec)
     id = @ref glGenFramebuffers(1, RepUInt32)

@@ -39,10 +39,12 @@ end
 struct IndexBuffer <: Abstractions.IndexBuffer
     id::UInt32
     count::UInt32
+    primitive_type::UInt32
 end
 
 function IndexBuffer(
-    indices::AbstractArray, count::Union{Integer, Nothing} = nothing,
+    indices::AbstractArray, count::Union{Integer, Nothing} = nothing;
+    primitive_type::UInt32 = GL_TRIANGLES,
 )
     id = @ref glGenBuffers(1, RepUInt32)
     count = count ≡ nothing ? length(indices) : count
@@ -53,7 +55,7 @@ function IndexBuffer(
         indices, GL_STATIC_DRAW)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
-    IndexBuffer(id, count)
+    IndexBuffer(id, count, primitive_type)
 end
 
 bind(buffer::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.id)
