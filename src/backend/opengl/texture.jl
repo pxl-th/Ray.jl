@@ -32,6 +32,8 @@ function Texture2D(
     kwargs...,
 )
     data, width, height, pixel_type = load_image(path, true)
+    @info path
+    @info pixel_type
 
     if internal_format ≡ nothing
         if length(pixel_type) == 3

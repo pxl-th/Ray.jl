@@ -9,6 +9,7 @@ using GeometryBasics
 using Ray
 
 include("primitives.jl")
+include("hdr_to_cubemap.jl")
 
 struct Material
     albedo::Ray.Backend.Texture2D
@@ -49,11 +50,11 @@ mutable struct CustomLayer <: Ray.Layer
     controller::Ray.PerspectiveCameraController
 
     cubebox::Ray.Backend.VertexArray
-    cubebox_shader::Ray.Backend.Shader
-    irradiance_shader::Ray.Backend.Shader
-    irradiance_map::Ray.Backend.Texture2D
+    cubemap::Ray.Backend.Cubemap
+    irradiance::Ray.Backend.Cubemap
+    skybox_shader::Ray.Backend.Shader
 
-    va::Ray.Backend.VertexArray
+    sphere::Ray.Backend.VertexArray
     shader::Ray.Backend.Shader
     material::Material
 
@@ -61,41 +62,70 @@ mutable struct CustomLayer <: Ray.Layer
 end
 
 function CustomLayer(width::Integer, height::Integer)
-    screen = get_screen_plane()
-    screen_shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\framebuffer.glsl")
-    fb = Ray.Backend.Framebuffer(Ray.Renderer.FramebufferSpec(width, height, 1))
-
-    cubebox = get_cubebox()
-    cubemap_shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\cubemap.glsl")
-    cubemap = Ray.Backend.Cubemap(512, 512)
-    irradiance_shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\from-rectangle-to-cubemap.glsl")
     irradiance_map = Ray.Backend.Texture2D(
-        raw"C:\Users\tonys\projects\julia\Ray\assets\textures\brooklyn-bridge-irradiance\bbp-2k.hdr",
+        raw"C:\Users\tonys\projects\julia\Ray\assets\textures\Newport_Loft\Newport_Loft_Ref.hdr",
         GL_UNSIGNED_SHORT, internal_format=GL_RGB16F, data_format=GL_RGB,
     )
+    cubemap, irradiance = hdr_to_cubemap(irradiance_map)
+    Ray.Backend.delete(irradiance_map)
+    Ray.Backend.set_viewport(width, height)
+
+    fb = Ray.Backend.Framebuffer(width, height)
+    screen = get_screen_plane()
+    cubebox = get_cubebox()
+    sphere = uv_sphere()
+
+    screen_shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\framebuffer.glsl")
+    skybox_shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\skybox.glsl")
+    shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\pbr.glsl")
 
     controller = Ray.PerspectiveCameraController(
         aspect_ratio=Float32(width / height), speed=10f0,
     )
-    va = uv_sphere()
+    # TODO more advanced texture format deduction
 
-    albedo = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\rust\rustediron2_basecolor.png")
-    metallic = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\rust\rustediron2_metallic.png")
-    normal = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\rust\rustediron2_normal.png")
-    roughness = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\rust\rustediron2_roughness.png")
+    albedo = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\plasticpattern1-ue\plasticpattern1-albedo.png")
+    metallic = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\plasticpattern1-ue\plasticpattern1-metalness.png")
+    normal = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\plasticpattern1-ue\plasticpattern1-normal2b.png")
+    roughness = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\plasticpattern1-ue\plasticpattern1-roughness2.png")
     ao = Ray.Backend.Texture2D(1, 1, internal_format=GL_RED, data_format=GL_RED)
     Ray.Backend.set_data!(ao, UInt8[0xff], 1)
 
-    material = Material(albedo, metallic, roughness, normal, ao)
-    shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\pbr-color.glsl")
+    # albedo = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\warped-sheet-metal-ue\warped-sheet-metal_albedo.png")
+    # metallic = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\warped-sheet-metal-ue\warped-sheet-metal_metallic.png")
+    # normal = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\warped-sheet-metal-ue\warped-sheet-metal_normal-dx.png")
+    # roughness = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\warped-sheet-metal-ue\warped-sheet-metal_roughness.png")
+    # ao = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\warped-sheet-metal-ue\warped-sheet-metal_ao.png")
 
-    lights = [Light(Point3f0(0f0, 0f0, 10f0), Point3f0(150f0, 150f0, 150f0))]
+    # albedo = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\scuffed-plastic-1-Unreal-Engine\scuffed-plastic4-alb.png")
+    # metallic = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\scuffed-plastic-1-Unreal-Engine\scuffed-plastic-metal.png")
+    # normal = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\scuffed-plastic-1-Unreal-Engine\scuffed-plastic-normal.png")
+    # roughness = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\scuffed-plastic-1-Unreal-Engine\scuffed-plastic-rough.png")
+    # ao = Ray.Backend.Texture2D(
+    #     raw"C:\Users\tonys\Downloads\scuffed-plastic-1-Unreal-Engine\scuffed-plastic-ao.png",
+    #     GL_UNSIGNED_SHORT, internal_format=GL_RGB16F, data_format=GL_RGB,
+    # )
+
+    # albedo = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\light-gold-ue\lightgold_albedo.png")
+    # metallic = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\light-gold-ue\lightgold_metallic.png")
+    # normal = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\light-gold-ue\lightgold_normal-dx.png")
+    # roughness = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\light-gold-ue\lightgold_roughness.png")
+    # ao = Ray.Backend.Texture2D(1, 1, internal_format=GL_RED, data_format=GL_RED)
+    # Ray.Backend.set_data!(ao, UInt8[0xff], 1)
+
+    material = Material(albedo, metallic, roughness, normal, ao)
+
+    lights = [
+        Light(Point3f0(0f0, 0f0, 10f0), Point3f0(150f0, 150f0, 150f0)),
+        Light(Point3f0(10f0, 0f0, 10f0), Point3f0(150f0, 150f0, 150f0)),
+        Light(Point3f0(0f0, 10f0, 10f0), Point3f0(150f0, 150f0, 150f0)),
+        Light(Point3f0(10f0, 10f0, 10f0), Point3f0(150f0, 150f0, 150f0)),
+    ]
     CustomLayer(
         fb, screen, screen_shader,
         controller,
-        cubebox, cubemap_shader,
-        irradiance_shader, irradiance_map,
-        va, shader, material,
+        cubebox, cubemap, irradiance, skybox_shader,
+        sphere, shader, material,
         lights,
     )
 end
@@ -108,31 +138,43 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     cs.fb |> Ray.Backend.bind
 
     Ray.Backend.enable_depth()
-    Ray.Backend.set_clear_color(0.9, 0.9, 0.9, 1)
+    Ray.Backend.set_clear_color(1.0, 0.0, 1.0, 1)
     Ray.Backend.clear()
 
     Ray.Renderer.begin_scene(cs.controller.camera)
 
     cs.shader |> Ray.Backend.bind
     Ray.Backend.upload_uniform(cs.shader, "u_CamPos", cs.controller.camera.position)
+    Ray.Backend.upload_uniform(cs.shader, "u_CamPos", cs.controller.camera.position)
+    Ray.Backend.upload_uniform(cs.shader, "u_IrradianceMap", 6)
+    Ray.Backend.bind(cs.irradiance, 6)
+
     upload_uniform(cs.shader, "u_Material", cs.material)
     for (i, light) in enumerate(cs.lights)
         Ray.Backend.upload_uniform(cs.shader, "u_LightPos[$(i - 1)]", light.position)
         Ray.Backend.upload_uniform(cs.shader, "u_LightColors[$(i - 1)]", light.color)
     end
 
-    Ray.Renderer.submit(cs.shader, cs.va)
-    Ray.Renderer.end_scene()
+    Ray.Renderer.submit(cs.shader, cs.sphere)
 
-    # Visualize cubebox.
-    cs.irradiance_shader |> Ray.Backend.bind
-    cs.irradiance_map |> Ray.Backend.bind
-    Ray.Backend.upload_uniform(cs.irradiance_shader, "u_EquirectangularMap", 0)
-    Ray.Backend.upload_uniform(cs.irradiance_shader, "u_ViewProjection", cs.controller.camera.view_projection)
+    # Draw skybox.
+    glDepthFunc(GL_LEQUAL)
+    cs.skybox_shader |> Ray.Backend.bind
+    cs.cubemap |> Ray.Backend.bind
+
+    Ray.Backend.upload_uniform(cs.skybox_shader, "u_EnvironmentMap", 0)
+    Ray.Backend.upload_uniform(
+        cs.skybox_shader, "u_Projection", cs.controller.camera.projection,
+    )
+    Ray.Backend.upload_uniform(
+        cs.skybox_shader, "u_View", cs.controller.camera.view,
+    )
 
     cs.cubebox |> Ray.Backend.bind
     cs.cubebox |> Ray.Backend.draw_indexed
+    glDepthFunc(GL_LESS)
 
+    Ray.Renderer.end_scene()
     cs.fb |> Ray.Backend.unbind
 
     # Render screen.
@@ -141,7 +183,7 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     Ray.Backend.clear(GL_COLOR_BUFFER_BIT)
 
     cs.screen_shader |> Ray.Backend.bind
-    Ray.Backend.bind(cs.fb.color_attachment, 0)
+    Ray.Backend.bind(cs.fb.attachments[GL_COLOR_ATTACHMENT0].attachment, 0)
     Ray.Backend.upload_uniform(cs.screen_shader, "u_ScreenTexture", 0)
 
     cs.screen |> Ray.Backend.bind

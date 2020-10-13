@@ -1,70 +1,105 @@
+struct Attachment
+    target::UInt32
+    level::UInt32
+    attachment::Union{Texture2D, Cubemap}
+end
+
 mutable struct Framebuffer <: Abstractions.Framebuffer
     id::UInt32
-    color_attachment::Union{Texture2D, Nothing}
-    depth_attachment::Union{Texture2D, Nothing}
-    spec::Abstractions.FramebufferSpec
-
+    attachments::Dict{UInt32, Attachment}
+    resizable::Bool
 end
 
-function Framebuffer(spec::Abstractions.FramebufferSpec)
-    id, color_attachment, depth_attachment = _recreate(spec)
-    Framebuffer(id, color_attachment, depth_attachment, spec)
-end
-
-"""
-TODO:
-- support for arbitrary amount of attachments
-- create empty as well as supplied with attachments (store in dict)
-- resizable or not (by default --- not)
-- ditch specs
-"""
-
-function _recreate(spec::Abstractions.FramebufferSpec)
+function Framebuffer(
+    attachments::Dict{UInt32, Attachment} = Dict{UInt32, Attachment}(),
+)
     id = @ref glGenFramebuffers(1, RepUInt32)
     glBindFramebuffer(GL_FRAMEBUFFER, id)
 
-    color_attachment = Texture2D(
-        spec.width, spec.height,
-        internal_format=GL_RGB8, data_format=GL_RGB,
-    )
-    depth_attachment = Texture2D(
-        spec.width, spec.height, GL_UNSIGNED_INT_24_8,
-        internal_format=GL_DEPTH24_STENCIL8, data_format=GL_DEPTH_STENCIL,
-    )
+    for (type, attachment) in attachments
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, type, attachment.target,
+            attachment.attachment.id, attachment.level,
+        )
+    end
 
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_2D, color_attachment.id, 0,
-    )
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-        GL_TEXTURE_2D, depth_attachment.id, 0,
-    )
-
-    !is_complete() && error("Framebuffer is incomplete.")
     glBindFramebuffer(GL_FRAMEBUFFER, 0)
-    id, color_attachment, depth_attachment
+    Framebuffer(id, attachments, false)
 end
 
-is_complete()::Bool =
+function Framebuffer(width::Integer, height::Integer)
+    id = @ref glGenFramebuffers(1, RepUInt32)
+    glBindFramebuffer(GL_FRAMEBUFFER, id)
+
+    attachments = _get_default_attachments(width, height)
+    for (type, attachment) in attachments
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, type, attachment.target,
+            attachment.attachment.id, attachment.level,
+        )
+    end
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+    Framebuffer(id, attachments, true)
+end
+
+is_complete(fb::Framebuffer)::Bool =
     glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+
+function attach!(fb::Framebuffer, type::UInt32, attachment::Attachment)
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER, type, attachment.target,
+        attachment.attachment.id, attachment.level,
+    )
+    fb.attachments[type] = attachment
+end
 
 bind(fb::Framebuffer) = glBindFramebuffer(GL_FRAMEBUFFER, fb.id)
 unbind(::Framebuffer) = glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-function delete(fb::Framebuffer)
-    glDeleteFramebuffers(1, Ref(fb.id))
-    delete(fb.color_attachment)
-    delete(fb.depth_attachment)
+function _get_default_attachments(width::Integer, height::Integer)
+    color_attachment = Texture2D(
+        width, height, internal_format=GL_RGB8, data_format=GL_RGB,
+    )
+    depth_attachment = Texture2D(
+        width, height, GL_UNSIGNED_INT_24_8,
+        internal_format=GL_DEPTH24_STENCIL8, data_format=GL_DEPTH_STENCIL,
+    )
+    Dict{UInt32, Attachment}(
+        GL_COLOR_ATTACHMENT0 => Attachment(
+            GL_TEXTURE_2D, UInt32(0), color_attachment,
+        ),
+        GL_DEPTH_STENCIL_ATTACHMENT => Attachment(
+            GL_TEXTURE_2D, UInt32(0), depth_attachment,
+        ),
+    )
 end
+
+"""
+TODO:
+- resizing
+- deletion
+- detaching
+"""
 
 function resize!(fb::Framebuffer, width::UInt32, height::UInt32)
-    delete(fb)
-
-    fb.spec = Abstractions.FramebufferSpec(width, height, fb.spec.samples)
-    id, color_attachment, depth_attachment = _recreate(fb.spec)
-
-    fb.id = id
-    fb.color_attachment = color_attachment
-    fb.depth_attachment = depth_attachment
+    if !fb.resizable
+        @warn "Framebuffer is not resizable."
+        return
+    end
+    (width == 0 || height == 0) && return
+    @info "Resizing to $width x $height NOT YET READY"
 end
+
+# function detach!(fb::Framebuffer, attachment_type::UInt32)
+#     attachment_type in keys(fb.attachments) &&
+#         pop!(fb.attachments, attachment_type)
+# end
+
+# function delete(fb::Framebuffer)
+#     glDeleteFramebuffers(1, Ref(fb.id))
+#     for key in keys(fb.attachments)
+#         target, attachment = pop!(fb.attachments, key)
+#         delete(attachment)
+#     end
+# end

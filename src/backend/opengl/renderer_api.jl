@@ -8,13 +8,13 @@ disable_depth() = glDisable(GL_DEPTH_TEST)
 enable_wireframe() = glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 disable_wireframe() = glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-hide_cursor() = GLFW.SetInputMode(window, GLFW.CURSOR, GLFW.CURSOR_DISABLED)
-show_cursor() = GLFW.SetInputMode(window, GLFW.CURSOR, GLFW.CURSOR_NORMAL)
+hide_cursor(window::GLFW.Window) = GLFW.SetInputMode(window, GLFW.CURSOR, GLFW.CURSOR_DISABLED)
+show_cursor(window::GLFW.Window) = GLFW.SetInputMode(window, GLFW.CURSOR, GLFW.CURSOR_NORMAL)
 
 set_viewport(width::Integer, height::Integer) = glViewport(0, 0, width, height)
 
 function init(window)
-    GLFW.SetInputMode(window, GLFW.CURSOR, GLFW.CURSOR_DISABLED)
+    window |> hide_cursor
 
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
