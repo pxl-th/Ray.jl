@@ -9,9 +9,7 @@ using GeometryBasics
 using Ray
 
 include("primitives.jl")
-include("hdr_to_cubemap.jl")
-include("prefilter.jl")
-include("integrate_brdf.jl")
+include("pbr_precompute.jl")
 
 struct Material
     albedo::Ray.Backend.Texture2D
@@ -43,7 +41,6 @@ function upload_uniform(
     Ray.Backend.upload_uniform(shader, "$name.ao", slot + 4)
 end
 
-
 mutable struct CustomLayer <: Ray.Layer
     fb::Ray.Backend.Framebuffer
     screen::Ray.Backend.VertexArray
@@ -52,12 +49,7 @@ mutable struct CustomLayer <: Ray.Layer
     controller::Ray.PerspectiveCameraController
 
     cubebox::Ray.Backend.VertexArray
-
-    cubemap::Ray.Backend.Cubemap
-    irradiance::Ray.Backend.Cubemap
-    prefiltered_cubemap::Ray.Backend.Cubemap
-    brdf_lut::Ray.Backend.Texture2D
-
+    pbr_precompute::PBRPrecompute
     skybox_shader::Ray.Backend.Shader
 
     sphere::Ray.Backend.VertexArray
@@ -69,15 +61,12 @@ end
 
 function CustomLayer(width::Integer, height::Integer)
     irradiance_map = Ray.Backend.Texture2D(
-        raw"C:\Users\tonys\projects\julia\Ray\assets\textures\brooklyn-bridge-irradiance\bbp-2k.hdr",
-        # raw"C:\Users\tonys\projects\julia\Ray\assets\textures\Newport_Loft\Newport_Loft_Ref.hdr",
+        # raw"C:\Users\tonys\Downloads\Factory_Catwalk\Factory_Catwalk_2k.hdr",
+        raw"C:\Users\tonys\Downloads\Circus_Backstage\Circus_Backstage_3k.hdr",
         GL_UNSIGNED_SHORT, internal_format=GL_RGB16F, data_format=GL_RGB,
     )
-
-    cubemap, irradiance = hdr_to_cubemap(irradiance_map)
+    pbr_precompute = precompute_pbr(irradiance_map)
     Ray.Backend.delete(irradiance_map)
-    prefiltered_cubemap = prefilter(cubemap)
-    brdf_lut = integrate_brdf()
 
     Ray.Backend.set_viewport(width, height)
 
@@ -113,17 +102,11 @@ function CustomLayer(width::Integer, height::Integer)
 
     material = Material(albedo, metallic, roughness, normal, ao)
 
-    lights = [
-        Light(Point3f0(0f0, 0f0, 10f0), Point3f0(150f0, 150f0, 150f0)),
-        Light(Point3f0(10f0, 0f0, 10f0), Point3f0(150f0, 150f0, 150f0)),
-        Light(Point3f0(0f0, 10f0, 10f0), Point3f0(150f0, 150f0, 150f0)),
-        Light(Point3f0(10f0, 10f0, 10f0), Point3f0(150f0, 150f0, 150f0)),
-    ]
+    lights = [Light(Point3f0(0f0, 0f0, 10f0), Point3f0(150f0, 150f0, 150f0))]
     CustomLayer(
         fb, screen, screen_shader,
         controller,
-        cubebox,
-        cubemap, irradiance, prefiltered_cubemap, brdf_lut,
+        cubebox, pbr_precompute,
         skybox_shader,
         sphere, shader, material,
         lights,
@@ -150,9 +133,9 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     Ray.Backend.upload_uniform(cs.shader, "u_IrradianceMap", 6)
     Ray.Backend.upload_uniform(cs.shader, "u_PrefilterMap", 7)
     Ray.Backend.upload_uniform(cs.shader, "u_BrdfLUT", 8)
-    Ray.Backend.bind(cs.irradiance, 6)
-    Ray.Backend.bind(cs.prefiltered_cubemap, 7)
-    Ray.Backend.bind(cs.brdf_lut, 8)
+    Ray.Backend.bind(cs.pbr_precompute.irradiance, 6)
+    Ray.Backend.bind(cs.pbr_precompute.prefiltered, 7)
+    Ray.Backend.bind(cs.pbr_precompute.brdf_lut, 8)
 
     upload_uniform(cs.shader, "u_Material", cs.material)
     for (i, light) in enumerate(cs.lights)
@@ -165,9 +148,8 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     # Draw skybox.
     glDepthFunc(GL_LEQUAL)
     cs.skybox_shader |> Ray.Backend.bind
-    cs.cubemap |> Ray.Backend.bind
-    # cs.irradiance |> Ray.Backend.bind
-    # cs.prefiltered_cubemap |> Ray.Backend.bind
+    # cs.pbr_precompute.prefiltered |> Ray.Backend.bind
+    cs.pbr_precompute.environment |> Ray.Backend.bind
 
     Ray.Backend.upload_uniform(cs.skybox_shader, "u_EnvironmentMap", 0)
     Ray.Backend.upload_uniform(

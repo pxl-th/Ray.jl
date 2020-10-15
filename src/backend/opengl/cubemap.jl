@@ -24,10 +24,7 @@ function Cubemap(
     end
 
     _set_cubemap_parameters(;kwargs...)
-    if generate_mips
-        @info "Generating MIPs for cubemap"
-        glGenerateMipmap(GL_TEXTURE_CUBE_MAP)
-    end
+    generate_mips && glGenerateMipmap(GL_TEXTURE_CUBE_MAP)
 
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0)
     Cubemap(id, width, height, internal_format, data_format, type)
