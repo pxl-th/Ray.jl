@@ -58,20 +58,16 @@ bind(fb::Framebuffer) = glBindFramebuffer(GL_FRAMEBUFFER, fb.id)
 unbind(::Framebuffer) = glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
 function _get_default_attachments(width::Integer, height::Integer)
-    color_attachment = Texture2D(
+    color = Texture2D(
         width, height, internal_format=GL_RGB8, data_format=GL_RGB,
     )
-    depth_attachment = Texture2D(
+    depth = Texture2D(
         width, height, GL_UNSIGNED_INT_24_8,
         internal_format=GL_DEPTH24_STENCIL8, data_format=GL_DEPTH_STENCIL,
     )
     Dict{UInt32, Attachment}(
-        GL_COLOR_ATTACHMENT0 => Attachment(
-            GL_TEXTURE_2D, UInt32(0), color_attachment,
-        ),
-        GL_DEPTH_STENCIL_ATTACHMENT => Attachment(
-            GL_TEXTURE_2D, UInt32(0), depth_attachment,
-        ),
+        GL_COLOR_ATTACHMENT0 => Attachment(GL_TEXTURE_2D, 0, color),
+        GL_DEPTH_STENCIL_ATTACHMENT => Attachment(GL_TEXTURE_2D, 0, depth),
     )
 end
 

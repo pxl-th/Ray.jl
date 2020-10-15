@@ -11,7 +11,7 @@ end
 function Cubemap(
     width::Integer, height::Integer;
     internal_format::UInt32 = GL_RGB16F, data_format::UInt32 = GL_RGB,
-    type::UInt32 = GL_UNSIGNED_SHORT, kwargs...,
+    type::UInt32 = GL_UNSIGNED_SHORT, generate_mips::Bool = false, kwargs...,
 )
     id = @ref glGenTextures(1, RepUInt32)
     glBindTexture(GL_TEXTURE_CUBE_MAP, id)
@@ -24,6 +24,12 @@ function Cubemap(
     end
 
     _set_cubemap_parameters(;kwargs...)
+    if generate_mips
+        @info "Generating MIPs for cubemap"
+        glGenerateMipmap(GL_TEXTURE_CUBE_MAP)
+    end
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0)
     Cubemap(id, width, height, internal_format, data_format, type)
 end
 
@@ -50,6 +56,8 @@ function Cubemap(faces::Vector{String}; kwargs...)
     _set_cubemap_parameters(;kwargs...)
     Cubemap(id, width, height, internal_format, data_format, type)
 end
+
+generate_mips(::Cubemap) = glGenerateMipmap(GL_TEXTURE_CUBE_MAP)
 
 function _set_cubemap_parameters(;
     wrap_s::UInt32 = GL_CLAMP_TO_EDGE,

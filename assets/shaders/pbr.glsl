@@ -37,6 +37,8 @@ uniform vec3 u_CamPos;
 uniform Material u_Material;
 
 uniform samplerCube u_IrradianceMap;
+uniform samplerCube u_PrefilterMap;
+uniform sampler2D u_BrdfLUT;
 uniform vec3 u_LightPos[4];
 uniform vec3 u_LightColors[4];
 
@@ -116,6 +118,17 @@ void main() {
     vec3 f0 = vec3(0.04);
     f0 = mix(f0, albedo, metallic);
 
+    vec3 f = fresnel_schlick_roughness(max(0.0, dot(n, v)), f0, roughness);
+
+    /* Specular component. */
+    vec3 r = reflect(-v, n);
+    const float max_reflection_lod = 4.0;
+    vec3 prefiltered_color = textureLod(
+        u_PrefilterMap, r, roughness * max_reflection_lod
+    ).rgb;
+    vec2 brdf = texture(u_BrdfLUT, vec2(max(0.0, dot(n, v)), roughness)).rg;
+    vec3 specular = prefiltered_color * (f * brdf.x + brdf.y);
+
     /* Reflectance equation. */
     vec3 Lo = vec3(0.0);
     for (int i = 0; i < 4; i++) {
@@ -144,11 +157,11 @@ void main() {
         Lo += (kd * albedo / PI + specular) * radiance * ndotl;
     }
 
-    vec3 ks = fresnel_schlick_roughness(max(dot(n, v), 0.0), f0, roughness);
+    vec3 ks = f;
     vec3 kd = 1.0 - ks;
     kd *= 1.0 - metallic;
     vec3 irradiance = texture(u_IrradianceMap, n).rgb;
-    vec3 ambient = irradiance * albedo * ao * kd;
+    vec3 ambient = (irradiance * albedo * kd + specular) * ao;
     /* vec3 ambient = vec3(0.03) * albedo * ao; */
 
     vec3 color = ambient + Lo;

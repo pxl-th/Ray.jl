@@ -1,17 +1,16 @@
 function hdr_to_cubemap(irradiance_map::Ray.Backend.Texture2D)
-    cubemap_width, cubemap_height = 1024, 1024
+    cubemap_width, cubemap_height = 512, 512
     cubemap = Ray.Backend.Cubemap(
         cubemap_width, cubemap_height,
         internal_format=GL_RGB16F, data_format=GL_RGB, type=GL_UNSIGNED_SHORT,
+        min_filter=GL_LINEAR_MIPMAP_LINEAR,
     )
     depth_attachment = Ray.Backend.Texture2D(
-        cubemap_width, cubemap_height, GL_UNSIGNED_INT_24_8,
-        internal_format=GL_DEPTH24_STENCIL8, data_format=GL_DEPTH_STENCIL,
+        cubemap_width, cubemap_height, GL_UNSIGNED_INT,
+        internal_format=GL_DEPTH_COMPONENT24, data_format=GL_DEPTH_COMPONENT,
     )
-    fb = Ray.Backend.Framebuffer(Dict{UInt32, Ray.Backend.Attachment}(
-        GL_DEPTH_STENCIL_ATTACHMENT => Ray.Backend.Attachment(
-            GL_TEXTURE_2D, UInt32(0), depth_attachment,
-        ),
+    fb = Ray.Backend.Framebuffer(Dict(
+        GL_DEPTH_ATTACHMENT => Ray.Backend.Attachment(GL_TEXTURE_2D, 0, depth_attachment),
     ))
 
     mapping_shader = Ray.Backend.Shader(
@@ -64,8 +63,8 @@ function hdr_to_cubemap(irradiance_map::Ray.Backend.Texture2D)
         internal_format=GL_RGB16F, data_format=GL_RGB, type=GL_UNSIGNED_SHORT,
     )
     convolution_depth_attachment = Ray.Backend.Texture2D(
-        32, 32, GL_UNSIGNED_INT_24_8,
-        internal_format=GL_DEPTH24_STENCIL8, data_format=GL_DEPTH_STENCIL,
+        32, 32, GL_UNSIGNED_INT,
+        internal_format=GL_DEPTH_COMPONENT24, data_format=GL_DEPTH_COMPONENT,
     )
 
     conv_fb = Ray.Backend.Framebuffer()
@@ -78,16 +77,16 @@ function hdr_to_cubemap(irradiance_map::Ray.Backend.Texture2D)
     cubebox |> Ray.Backend.bind
     convolution_shader |> Ray.Backend.bind
     cubemap |> Ray.Backend.bind
+    cubemap |> Ray.Backend.generate_mips
     Ray.Backend.upload_uniform(convolution_shader, "u_EnvironmentMap", 0)
 
     # TODO delete previous attachments
-    Ray.Backend.attach!(conv_fb, GL_DEPTH_STENCIL_ATTACHMENT, Ray.Backend.Attachment(
-        GL_TEXTURE_2D, UInt32(0), convolution_depth_attachment,
+    Ray.Backend.attach!(conv_fb, GL_DEPTH_ATTACHMENT, Ray.Backend.Attachment(
+        GL_TEXTURE_2D, 0, convolution_depth_attachment,
     ))
     for (i, view) in enumerate(views)
         color_attachment = Ray.Backend.Attachment(
-            GL_TEXTURE_CUBE_MAP_POSITIVE_X + i - 1, UInt32(0),
-            convolution_cubemap,
+            GL_TEXTURE_CUBE_MAP_POSITIVE_X + i - 1, 0, convolution_cubemap,
         )
         Ray.Backend.attach!(conv_fb, GL_COLOR_ATTACHMENT0, color_attachment)
         Ray.Backend.upload_uniform(

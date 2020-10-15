@@ -21,7 +21,7 @@ function Texture2D(
         width, height, 0, data_format, type, C_NULL,
     )
 
-    _set_texture_parameters(kwargs...)
+    _set_texture_parameters(;kwargs...)
     Texture2D(id, width, height, "", internal_format, data_format, type)
 end
 
@@ -32,8 +32,6 @@ function Texture2D(
     kwargs...,
 )
     data, width, height, pixel_type = load_image(path, true)
-    @info path
-    @info pixel_type
 
     if internal_format ≡ nothing
         if length(pixel_type) == 3
@@ -61,7 +59,7 @@ function Texture2D(
         width, height, 0, data_format, type, data,
     )
 
-    _set_texture_parameters(kwargs...)
+    _set_texture_parameters(;kwargs...)
     Texture2D(id, width, height, path, internal_format, data_format, type)
 end
 
