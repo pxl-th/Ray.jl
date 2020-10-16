@@ -8,14 +8,16 @@ using GeometryBasics
 using Ray
 
 mutable struct CustomLayer <: Ray.Layer
-    texture::Ray.Renderer2D.Backend.Texture2D
+    texture::Ray.Backend.Texture2D
     controller::Ray.OrthographicCameraController
     total_time::Float32
 end
 
 function CustomLayer()
-    Ray.Renderer2D.init()
-    texture = Ray.Renderer2D.Backend.Texture2D(raw"C:\Users\tonys\Downloads\kozo.jpg")
+    Ray.init() # TODO differentiate between 2D and 3D renderer
+    texture = Ray.Backend.Texture2D(
+        joinpath(Ray.get_assets_path(), "textures", "missing.png"),
+    )
     controller = Ray.OrthographicCameraController(1280f0 / 720f0, true)
     CustomLayer(texture, controller, 0)
 end
@@ -29,21 +31,21 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     Ray.Backend.set_clear_color(0.1, 0.1, 0.1, 1)
     Ray.Backend.clear()
 
-    Ray.Renderer2D.begin_scene(cs.controller.camera, Mat4f0(I))
+    Ray.begin_scene(cs.controller.camera, Mat4f0(I))
 
     for i in 0:10
         for j in 0:10
-            Ray.Renderer2D.draw_quad(Vec3f0(i, j, 0), Vec2f0(1, 1), cs.texture)
+            Ray.draw_quad(Vec3f0(i, j, 0), Vec2f0(1, 1), cs.texture)
         end
     end
 
     for i in 0:10
         for j in 0:10
-            Ray.Renderer2D.draw_quad(Vec3f0(-i, -j, 0), Vec2f0(1, 1), i * cs.total_time, Point4f0(0.8, 0.3, 0.2, 1.0))
+            Ray.draw_quad(Vec3f0(-i, -j, 0), Vec2f0(1, 1), i * cs.total_time, Point4f0(0.8, 0.3, 0.2, 1.0))
         end
     end
 
-    Ray.Renderer2D.end_scene()
+    Ray.end_scene()
 end
 
 function Ray.EngineCore.on_event(cs::CustomLayer, event::Ray.Event.MouseScrolled)

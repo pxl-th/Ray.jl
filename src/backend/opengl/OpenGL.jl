@@ -4,7 +4,7 @@ using Images
 using GeometryBasics
 using GLFW
 using ModernGL
-using ..Abstractions
+using Ray.Abstractions
 
 include("../macros.jl")
 

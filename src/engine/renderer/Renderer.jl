@@ -1,28 +1,3 @@
-module Renderer
-export
-    BufferElement, BufferLayout, size, length,
-    submit, begin_scene, end_scene,
-    ShaderLibrary, add!, load!, get, exists
-
-using LinearAlgebra: I
-using StaticArrays
-using GeometryBasics
-using GLFW
-
-
-include("../../backend/Abstractions.jl")
-include("../../backend/opengl/OpenGL.jl")
-
-using Ray.Input
-using Ray.Event
-using Ray.OrthographicCameraModule
-using Ray.PerspectiveCameraModule
-
-using .Abstractions
-using .OpenGLBackend
-
-const Backend = OpenGLBackend
-
 include("shader.jl")
 
 mutable struct SceneData
@@ -35,12 +10,6 @@ function begin_scene(camera::PerspectiveCamera)
     State.view_projection = camera.view_projection
 end
 
-function begin_scene(camera::OrthographicCamera)
-    State.view_projection = camera.view_projection
-end
-
-function end_scene() end
-
 function submit(
     shader::Abstractions.Shader,
     va::Abstractions.VertexArray, transform::Mat4f0 = Mat4f0(I),
@@ -51,7 +20,4 @@ function submit(
 
     va |> Backend.bind
     va |> Backend.draw_indexed
-end
-
-
 end

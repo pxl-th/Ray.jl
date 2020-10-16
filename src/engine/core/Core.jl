@@ -8,9 +8,8 @@ export
 
 using Parameters: @with_kw
 using GLFW
-using ..Renderer
-using ..Event
-using ..Ray
+using Ray.Event
+using Ray
 
 GLFW_INITIALIZED = false
 

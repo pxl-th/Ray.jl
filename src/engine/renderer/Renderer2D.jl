@@ -1,24 +1,3 @@
-module Renderer2D
-
-using GeometryBasics
-using LinearAlgebra
-using StaticArrays
-using Parameters: @with_kw
-using GLFW
-
-using Ray.Transformations
-using Ray.Input
-using Ray.Event
-using Ray.OrthographicCameraModule
-
-include("../../backend/Abstractions.jl")
-include("../../backend/opengl/OpenGL.jl")
-
-using .Abstractions
-using .OpenGLBackend
-
-const Backend = OpenGLBackend
-
 struct QuadVertex
     position::Vec3f0
     color::Vec4f0
@@ -76,18 +55,16 @@ function init()
     Data.quad_vertex_buffer = Backend.VertexBuffer(Data.max_quads * sizeof(QuadVertex))
     ib = Backend.IndexBuffer(quad_indices)
 
-    Backend.set_layout(Data.quad_vertex_buffer, BufferLayout([
-        BufferElement(Point3f0, "a_Position"),
-        BufferElement(Point4f0, "a_Color"),
-        BufferElement(Point2f0, "a_TexCoord"),
-        BufferElement(Point1f0, "a_TexId"),
+    Backend.set_layout(Data.quad_vertex_buffer, Abstractions.BufferLayout([
+        Abstractions.BufferElement(Point3f0, "a_Position"),
+        Abstractions.BufferElement(Point4f0, "a_Color"),
+        Abstractions.BufferElement(Point2f0, "a_TexCoord"),
+        Abstractions.BufferElement(Point1f0, "a_TexId"),
     ]))
     Backend.add_vertex_buffer(Data.quad_vertex_array, Data.quad_vertex_buffer)
     Backend.set_index_buffer(Data.quad_vertex_array, ib)
 
-    Data.texture_shader = Backend.Shader(
-        raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\texture.glsl",
-    )
+    Data.texture_shader = get_asset_shader("texture")
     Data.texture_shader |> Backend.bind
     for i in 1:Data.max_texture_slots
         Backend.upload_uniform(Data.texture_shader, "u_Textures[$(i - 1)]", i - 1)
@@ -240,6 +217,4 @@ function draw_quad(
             tint, texture_coordinates[i], Point1f0(texture_id),
         )
     end
-end
-
 end

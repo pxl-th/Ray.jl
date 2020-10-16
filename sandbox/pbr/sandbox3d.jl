@@ -60,9 +60,11 @@ mutable struct CustomLayer <: Ray.Layer
 end
 
 function CustomLayer(width::Integer, height::Integer)
+    assets_directory = Ray.get_assets_path()
+    material_path = joinpath(assets_directory, "materials", "gold")
+
     irradiance_map = Ray.Backend.Texture2D(
-        # raw"C:\Users\tonys\Downloads\Factory_Catwalk\Factory_Catwalk_2k.hdr",
-        raw"C:\Users\tonys\Downloads\Circus_Backstage\Circus_Backstage_3k.hdr",
+        joinpath(assets_directory, "textures", "environment-maps", "circus.hdr"),
         GL_UNSIGNED_SHORT, internal_format=GL_RGB16F, data_format=GL_RGB,
     )
     pbr_precompute = precompute_pbr(irradiance_map)
@@ -75,32 +77,24 @@ function CustomLayer(width::Integer, height::Integer)
     cubebox = get_cubebox()
     sphere = uv_sphere()
 
-    screen_shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\framebuffer.glsl")
-    skybox_shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\skybox.glsl")
-    shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\pbr.glsl")
+    screen_shader = Ray.get_asset_shader("framebuffer")
+    skybox_shader = Ray.get_asset_shader("skybox")
+    shader = Ray.get_asset_shader("pbr")
 
     controller = Ray.PerspectiveCameraController(
         aspect_ratio=Float32(width / height), speed=10f0,
     )
     # TODO more advanced texture format deduction
 
-    # albedo = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\scuffed-plastic-1-Unreal-Engine\scuffed-plastic4-alb.png")
-    # metallic = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\scuffed-plastic-1-Unreal-Engine\scuffed-plastic-metal.png")
-    # normal = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\scuffed-plastic-1-Unreal-Engine\scuffed-plastic-normal.png")
-    # roughness = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\scuffed-plastic-1-Unreal-Engine\scuffed-plastic-rough.png")
-    # ao = Ray.Backend.Texture2D(
-    #     raw"C:\Users\tonys\Downloads\scuffed-plastic-1-Unreal-Engine\scuffed-plastic-ao.png",
-    #     GL_UNSIGNED_SHORT, internal_format=GL_RGB16F, data_format=GL_RGB,
-    # )
-
-    albedo = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\light-gold-ue\lightgold_albedo.png")
-    metallic = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\light-gold-ue\lightgold_metallic.png")
-    normal = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\light-gold-ue\lightgold_normal-dx.png")
-    roughness = Ray.Backend.Texture2D(raw"C:\Users\tonys\Downloads\light-gold-ue\lightgold_roughness.png")
     ao = Ray.Backend.Texture2D(1, 1, internal_format=GL_RED, data_format=GL_RED)
     Ray.Backend.set_data!(ao, UInt8[0xff], 1)
-
-    material = Material(albedo, metallic, roughness, normal, ao)
+    material = Material(
+        Ray.Backend.Texture2D(joinpath(material_path, "albedo.png")),
+        Ray.Backend.Texture2D(joinpath(material_path, "metallic.png")),
+        Ray.Backend.Texture2D(joinpath(material_path, "roughness.png")),
+        Ray.Backend.Texture2D(joinpath(material_path, "normal.png")),
+        ao,
+    )
 
     lights = [Light(Point3f0(0f0, 0f0, 10f0), Point3f0(150f0, 150f0, 150f0))]
     CustomLayer(
@@ -124,7 +118,7 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     Ray.Backend.set_clear_color(1.0, 0.0, 1.0, 1)
     Ray.Backend.clear()
 
-    Ray.Renderer.begin_scene(cs.controller.camera)
+    Ray.begin_scene(cs.controller.camera)
 
     cs.shader |> Ray.Backend.bind
     Ray.Backend.upload_uniform(cs.shader, "u_CamPos", cs.controller.camera.position)
@@ -143,7 +137,7 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
         Ray.Backend.upload_uniform(cs.shader, "u_LightColors[$(i - 1)]", light.color)
     end
 
-    Ray.Renderer.submit(cs.shader, cs.sphere)
+    Ray.submit(cs.shader, cs.sphere)
 
     # Draw skybox.
     glDepthFunc(GL_LEQUAL)
@@ -163,7 +157,7 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     cs.cubebox |> Ray.Backend.draw_indexed
     glDepthFunc(GL_LESS)
 
-    Ray.Renderer.end_scene()
+    # Ray.end_scene()
     cs.fb |> Ray.Backend.unbind
 
     # Render screen.

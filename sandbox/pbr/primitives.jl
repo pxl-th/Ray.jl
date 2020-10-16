@@ -59,10 +59,10 @@ function uv_sphere(steps = 32, scale = 1f0)
     vb = Ray.Backend.VertexBuffer(data, sizeof(data))
     ib = Ray.Backend.IndexBuffer(indices)
 
-    Ray.Backend.set_layout(vb, Ray.Renderer.BufferLayout([
-        Ray.Renderer.BufferElement(Point3f0, "a_Position"),
-        Ray.Renderer.BufferElement(Point2f0, "a_TexCoord"),
-        Ray.Renderer.BufferElement(Vec3f0, "a_Normal"),
+    Ray.Backend.set_layout(vb, Ray.BufferLayout([
+        Ray.BufferElement(Point3f0, "a_Position"),
+        Ray.BufferElement(Point2f0, "a_TexCoord"),
+        Ray.BufferElement(Vec3f0, "a_Normal"),
     ]))
     Ray.Backend.add_vertex_buffer(va, vb)
     Ray.Backend.set_index_buffer(va, ib)
@@ -83,9 +83,9 @@ function get_screen_plane()
     vb = Ray.Backend.VertexBuffer(data, sizeof(data))
     ib = Ray.Backend.IndexBuffer(indices)
 
-    Ray.Backend.set_layout(vb, Ray.Renderer.BufferLayout([
-        Ray.Renderer.BufferElement(Point2f0, "a_Position"),
-        Ray.Renderer.BufferElement(Point2f0, "a_TexCoord"),
+    Ray.Backend.set_layout(vb, Ray.BufferLayout([
+        Ray.BufferElement(Point2f0, "a_Position"),
+        Ray.BufferElement(Point2f0, "a_TexCoord"),
     ]))
     Ray.Backend.add_vertex_buffer(va, vb)
     Ray.Backend.set_index_buffer(va, ib)
@@ -117,8 +117,8 @@ function get_cubebox()
     vb = Ray.Backend.VertexBuffer(data, sizeof(data))
     ib = Ray.Backend.IndexBuffer(indices, primitive_type=GL_QUADS)
 
-    Ray.Backend.set_layout(vb, Ray.Renderer.BufferLayout([
-        Ray.Renderer.BufferElement(Point3f0, "a_Position"),
+    Ray.Backend.set_layout(vb, Ray.BufferLayout([
+        Ray.BufferElement(Point3f0, "a_Position"),
     ]))
     Ray.Backend.add_vertex_buffer(va, vb)
     Ray.Backend.set_index_buffer(va, ib)

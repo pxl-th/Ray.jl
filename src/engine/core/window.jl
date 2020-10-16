@@ -9,7 +9,7 @@ end
 mutable struct Window
     properties::WindowProps
     window::GLFW.Window
-    context::Renderer.Backend.Context
+    context::Ray.Backend.Context
 end
 
 function Window(props::WindowProps)
@@ -25,8 +25,8 @@ function Window(props::WindowProps)
     end
 
     window = GLFW.CreateWindow(props.width, props.height, props.title)
-    context = Renderer.Backend.Context(window)
-    context |> Renderer.Backend.init
+    context = Ray.Backend.Context(window)
+    context |> Ray.Backend.init
 
     Window(props, window, context)
 end
@@ -75,7 +75,6 @@ function set_vsync(window::Window, enabled::Bool)
 end
 
 is_vsync(window::Window)::Bool = window.properties.vsync
-
 get_width(window::Window)::Int64 = window.properties.width
 get_height(window::Window)::Int64 = window.properties.height
 set_width(window::Window, width::Int64) = window.properties.width = width
@@ -83,5 +82,5 @@ set_height(window::Window, height::Int64) = window.properties.height = height
 
 function on_update(window::Window)
     GLFW.PollEvents()
-    window.context |> Renderer.Backend.swap_buffers
+    window.context |> Ray.Backend.swap_buffers
 end

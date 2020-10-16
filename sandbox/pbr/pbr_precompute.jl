@@ -47,7 +47,7 @@ function _integrate_brdf(
         width, height, GL_UNSIGNED_INT,
         internal_format=GL_DEPTH_COMPONENT24, data_format=GL_DEPTH_COMPONENT,
     )
-    shader = Ray.Backend.Shader(raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\precompute-brdf.glsl")
+    shader = Ray.get_asset_shader("precompute-brdf")
     screen = get_screen_plane()
 
     Ray.Backend.attach!(
@@ -80,9 +80,7 @@ function _prefilter(
         internal_format=GL_RGB16F, data_format=GL_RGB, type=GL_UNSIGNED_SHORT,
         min_filter=GL_LINEAR_MIPMAP_LINEAR, generate_mips=true,
     )
-    shader = Ray.Backend.Shader(
-        raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\prefilter.glsl",
-    )
+    shader = Ray.get_asset_shader("prefilter")
 
     shader |> Ray.Backend.bind
     environment_map |> Ray.Backend.bind
@@ -131,9 +129,7 @@ function _map_to_cubemap(
     Ray.Backend.attach!(fb, GL_DEPTH_ATTACHMENT, Ray.Backend.Attachment(
         GL_TEXTURE_2D, 0, depth_attachment,
     ))
-    shader = Ray.Backend.Shader(
-        raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\from-rectangle-to-cubemap.glsl",
-    )
+    shader = Ray.get_asset_shader("from-rectangle-to-cubemap")
 
     shader |> Ray.Backend.bind
     irradiance_map |> Ray.Backend.bind
@@ -161,9 +157,7 @@ function _convolve(
         conv_width, conv_height, GL_UNSIGNED_INT,
         internal_format=GL_DEPTH_COMPONENT24, data_format=GL_DEPTH_COMPONENT,
     )
-    shader = Ray.Backend.Shader(
-        raw"C:\Users\tonys\projects\julia\Ray\assets\shaders\cubemap-convolution.glsl",
-    )
+    shader = Ray.get_asset_shader("cubemap-convolution")
 
     Ray.Backend.set_viewport(conv_width, conv_height)
 

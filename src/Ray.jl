@@ -1,6 +1,8 @@
 module Ray
 
 using GeometryBasics
+using LinearAlgebra
+using StaticArrays
 using GLFW
 using Parameters: @with_kw
 using ModernGL
@@ -15,6 +17,10 @@ let application = nothing
 end
 
 include("backend/macros.jl")
+include("backend/Abstractions.jl")
+include("backend/opengl/OpenGL.jl")
+
+const Backend = OpenGLBackend
 
 include("engine/events/Event.jl")
 include("engine/core/input.jl")
@@ -22,22 +28,37 @@ include("engine/core/Transformations.jl")
 
 include("engine/renderer/OrthographicCamera.jl")
 include("engine/renderer/PerspectiveCamera.jl")
-include("engine/renderer/Renderer.jl")
-include("engine/renderer/Renderer2D.jl")
+using .OrthographicCameraModule
+using .PerspectiveCameraModule
 
 include("engine/core/Core.jl")
 include("engine/imgui/ImGUI.jl")
 
+using .Abstractions
 using .Transformations
-using .OrthographicCameraModule
-using .PerspectiveCameraModule
 using .Event
 using .Input
-using .Renderer
 using .EngineCore
 using .ImGUI
 
-const Backend = Renderer.Backend
+include("engine/renderer/Renderer.jl")
+include("engine/renderer/Renderer2D.jl")
+
+function get_assets_path()::String
+    assets_path = joinpath(@__DIR__, "..", "assets")
+    @assert isdir(assets_path) "Assets path does not exist!"
+    assets_path
+end
+
+function get_asset_shader_path(name::String)::String
+    !endswith(name, ".glsl") && (name = "$(name).glsl")
+    shader_path = joinpath(get_assets_path(), "shaders", name)
+    !isfile(shader_path) && error("No [$name] shader found in assets.")
+    shader_path
+end
+
+get_asset_shader(name::String)::Backend.Shader =
+    name |> get_asset_shader_path |> Backend.Shader
 
 mutable struct Application
     window::EngineCore.Window

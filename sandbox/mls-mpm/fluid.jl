@@ -269,7 +269,7 @@ mutable struct MPMLayer <: Ray.Layer
 end
 
 function MPMLayer()
-    Ray.Renderer2D.init()
+    Ray.init()
     controller = Ray.OrthographicCameraController(1280f0 / 720f0, true)
     mpm = MPM(;grid_resolution=64 |> Int32, box_size=32f0, δt=0.2f0)
     MPMLayer(controller, mpm, false)
@@ -290,7 +290,7 @@ function draw_particles(
         ϵ = rand(Float32) / 15f0
         particle_color = (1 - σ - ϵ) * base_color + (σ + ϵ) * top_color
 
-        Ray.Renderer2D.draw_quad(
+        Ray.draw_quad(
             Vec3f0(world_position..., 0f0), Vec2f0(particle_size),
             particle_color,
         )
@@ -306,9 +306,9 @@ function Ray.on_update(cs::MPMLayer, timestep::Float64)
     Ray.Backend.set_clear_color(0.1, 0.1, 0.1, 1)
     Ray.Backend.clear()
 
-    Ray.Renderer2D.begin_scene(cs.controller.camera)
+    Ray.begin_scene(cs.controller.camera)
     draw_particles(cs.mpm; particle_size=0.01f0)
-    Ray.Renderer2D.end_scene()
+    Ray.end_scene()
 end
 
 function Ray.EngineCore.on_event(cs::MPMLayer, event::Ray.Event.MouseScrolled)
@@ -333,12 +333,13 @@ function Ray.EngineCore.on_event(cs::MPMLayer, event::Ray.Event.WindowResize)
 end
 
 function Ray.on_imgui_render(cs::MPMLayer, timestep::Float64)
-    # CImGui.Begin("Fluid Simulation")
-    # CImGui.Text("Grid resolution: $(cs.mpm.grid_resolution)x$(cs.mpm.grid_resolution)")
-    # CImGui.Text("Total particles: $(cs.mpm.num_particles)")
-    # CImGui.Text("[P] to play/pause simulation.")
-    # CImGui.Text("[R] to reset simulation.")
-    # CImGui.End()
+    CImGui.Begin("MPM Info")
+    CImGui.Text("Grid resolution: $(cs.mpm.grid_resolution)x$(cs.mpm.grid_resolution)")
+    CImGui.Text("Total particles: $(cs.mpm.num_particles)")
+
+    CImGui.Text("[P] to play/pause simulation.")
+    CImGui.Text("[R] to reset simulation.")
+    CImGui.End()
 end
 
 function main()
