@@ -6,6 +6,12 @@ Simple rendering engine.
 
 <img src="https://raw.githubusercontent.com/pxl-th/Ray.jl/master/res/pbr-simple-demo.png" width=460>
 
+To run demo execute following command:
+
+```bash
+julia --project=. sandbox/pbr/sandbox3d.jl
+```
+
 ## 2D demo
 
 Self-contained [example](https://github.com/pxl-th/MPM) of different material-point-methods.
