@@ -25,7 +25,9 @@ function precompute_pbr(
     prefiltered_cubemap = _prefilter(fb, environment_cubemap, cube, pvs)
     brdf_lut = _integrate_brdf(fb)
 
+    Ray.Backend.detach!(fb, GL_COLOR_ATTACHMENT0)
     fb |> Ray.Backend.unbind
+    fb |> Ray.Backend.delete
     cube |> Ray.Backend.delete
     # TODO: delete framebuffer
 

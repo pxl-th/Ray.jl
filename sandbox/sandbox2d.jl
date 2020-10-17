@@ -18,7 +18,10 @@ function CustomLayer()
     texture = Ray.Backend.Texture2D(
         joinpath(Ray.get_assets_path(), "textures", "missing.png"),
     )
-    controller = Ray.OrthographicCameraController(1280f0 / 720f0, true)
+    window_properties = Ray.get_application().window.properties
+    controller = Ray.OrthographicCameraController(
+        Float32(window_properties.width / window_properties.height), true,
+    )
     CustomLayer(texture, controller, 0)
 end
 
@@ -33,16 +36,14 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
 
     Ray.begin_scene(cs.controller.camera, Mat4f0(I))
 
-    for i in 0:10
-        for j in 0:10
-            Ray.draw_quad(Vec3f0(i, j, 0), Vec2f0(1, 1), cs.texture)
-        end
+    for i in 0:10, j in 0:10
+        Ray.draw_quad(Vec3f0(i, j, 0), Vec2f0(1, 1), cs.texture)
     end
-
-    for i in 0:10
-        for j in 0:10
-            Ray.draw_quad(Vec3f0(-i, -j, 0), Vec2f0(1, 1), i * cs.total_time, Point4f0(0.8, 0.3, 0.2, 1.0))
-        end
+    for i in 0:10, j in 0:10
+        Ray.draw_quad(
+            Vec3f0(-i - 1, j, 0), Vec2f0(1, 1),
+            i * cs.total_time, Point4f0(0.8, 0.3, 0.2, 1.0),
+        )
     end
 
     Ray.end_scene()
@@ -63,7 +64,7 @@ function Ray.on_imgui_render(cs::CustomLayer, timestep::Float64)
 end
 
 function main()
-    application = Ray.Application()
+    application = Ray.Application(1920, 1020)
     Ray.push_layer(application.layer_stack, CustomLayer())
     application |> Ray.run
 end

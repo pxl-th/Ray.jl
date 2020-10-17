@@ -189,7 +189,7 @@ function Ray.on_imgui_render(cs::CustomLayer, timestep::Float64)
 end
 
 function main()
-    application = Ray.Application()
+    application = Ray.Application(1920, 1020)
     layer = CustomLayer(
         application.window.properties.width,
         application.window.properties.height,

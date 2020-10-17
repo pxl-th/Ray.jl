@@ -70,8 +70,10 @@ mutable struct Application
     last_frame_time::Float64
 end
 
-function Application(name::String = "Ray")
-    props = EngineCore.WindowProps(title=name)
+function Application(
+    width::Integer = 1280, height::Integer = 720, name::String = "Ray",
+)
+    props = EngineCore.WindowProps(width=width, height=height, title=name)
     window = EngineCore.Window(props)
 
     app = Application(

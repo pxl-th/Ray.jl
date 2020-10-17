@@ -71,12 +71,18 @@ function _get_default_attachments(width::Integer, height::Integer)
     )
 end
 
-"""
-TODO:
-- resizing
-- deletion
-- detaching
-"""
+function detach!(fb::Framebuffer, attachment_type::UInt32)
+    attachment_type in keys(fb.attachments) &&
+        pop!(fb.attachments, attachment_type)
+end
+
+function delete(fb::Framebuffer)
+    glDeleteFramebuffers(1, Ref(fb.id))
+    for key in keys(fb.attachments)
+        attachment = pop!(fb.attachments, key)
+        delete(attachment.attachment)
+    end
+end
 
 function resize!(fb::Framebuffer, width::UInt32, height::UInt32)
     if !fb.resizable
@@ -84,18 +90,20 @@ function resize!(fb::Framebuffer, width::UInt32, height::UInt32)
         return
     end
     (width == 0 || height == 0) && return
-    @info "Resizing to $width x $height NOT YET READY"
+
+    color = fb.attachments[GL_COLOR_ATTACHMENT0].attachment
+    color.width == width && color.height == height && return
+    @info "Resizing framebuffer to $width x $height"
+
+    fb |> bind
+
+    for key in keys(fb.attachments)
+        delete(pop!(fb.attachments, key).attachment)
+    end
+    resized_attachments = _get_default_attachments(width, height)
+    for (target, attachment) in resized_attachments
+        attach!(fb, target, attachment)
+    end
+
+    fb |> unbind
 end
-
-# function detach!(fb::Framebuffer, attachment_type::UInt32)
-#     attachment_type in keys(fb.attachments) &&
-#         pop!(fb.attachments, attachment_type)
-# end
-
-# function delete(fb::Framebuffer)
-#     glDeleteFramebuffers(1, Ref(fb.id))
-#     for key in keys(fb.attachments)
-#         target, attachment = pop!(fb.attachments, key)
-#         delete(attachment)
-#     end
-# end
