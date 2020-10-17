@@ -1,6 +1,6 @@
 # Ray
 
-Simple rendering engine.
+Simple rendering engine (no ray-tracing pun intended).
 
 ## PBR demo
 
