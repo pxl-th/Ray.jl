@@ -24,3 +24,11 @@ Self-contained [example](https://github.com/pxl-th/MPM) of different material-po
 ## Examples
 
 See [sandbox/](https://github.com/pxl-th/Ray.jl/tree/master/sandbox) directory for examples on how to use it.
+
+## Precompile
+
+To reduce startup time you can precompile necessary dependencies into `.dll` which you can use with `--sysimage` to replace default sysimage:
+
+```bash
+julia --project=. create-sysimage.jl
+```
