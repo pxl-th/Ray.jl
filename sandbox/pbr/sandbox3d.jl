@@ -54,14 +54,33 @@ mutable struct CustomLayer <: Ray.Layer
 
     sphere::Ray.Backend.VertexArray
     shader::Ray.Backend.Shader
-    material::Material
+    materials::Vector{Material}
 
     lights::Vector{Light}
 end
 
 function CustomLayer(width::Integer, height::Integer)
     assets_directory = Ray.get_assets_path()
-    material_path = joinpath(assets_directory, "materials", "gold")
+    material_names = ["gold", "metal-grid", "beaten-up-metal", "ornate-brass"]
+    materials = []
+    for name in material_names
+        material_path = joinpath(assets_directory, "materials", name)
+        ao_path = joinpath(material_path, "ao.png")
+        if isfile(ao_path)
+            ao = Ray.Backend.Texture2D(ao_path)
+        else
+            ao = Ray.Backend.Texture2D(1, 1, internal_format=GL_RED, data_format=GL_RED)
+            Ray.Backend.set_data!(ao, UInt8[0xff], 1)
+        end
+        material = Material(
+            Ray.Backend.Texture2D(joinpath(material_path, "albedo.png")),
+            Ray.Backend.Texture2D(joinpath(material_path, "metallic.png")),
+            Ray.Backend.Texture2D(joinpath(material_path, "roughness.png")),
+            Ray.Backend.Texture2D(joinpath(material_path, "normal.png")),
+            ao,
+        )
+        push!(materials, material)
+    end
 
     irradiance_map = Ray.Backend.Texture2D(
         joinpath(assets_directory, "textures", "environment-maps", "circus.hdr"),
@@ -84,17 +103,6 @@ function CustomLayer(width::Integer, height::Integer)
     controller = Ray.PerspectiveCameraController(
         aspect_ratio=Float32(width / height), speed=10f0,
     )
-    # TODO more advanced texture format deduction
-
-    ao = Ray.Backend.Texture2D(1, 1, internal_format=GL_RED, data_format=GL_RED)
-    Ray.Backend.set_data!(ao, UInt8[0xff], 1)
-    material = Material(
-        Ray.Backend.Texture2D(joinpath(material_path, "albedo.png")),
-        Ray.Backend.Texture2D(joinpath(material_path, "metallic.png")),
-        Ray.Backend.Texture2D(joinpath(material_path, "roughness.png")),
-        Ray.Backend.Texture2D(joinpath(material_path, "normal.png")),
-        ao,
-    )
 
     lights = [Light(Point3f0(0f0, 0f0, 10f0), Point3f0(150f0, 150f0, 150f0))]
     CustomLayer(
@@ -102,7 +110,7 @@ function CustomLayer(width::Integer, height::Integer)
         controller,
         cubebox, pbr_precompute,
         skybox_shader,
-        sphere, shader, material,
+        sphere, shader, materials,
         lights,
     )
 end
@@ -131,19 +139,21 @@ function Ray.on_update(cs::CustomLayer, timestep::Float64)
     Ray.Backend.bind(cs.pbr_precompute.prefiltered, 7)
     Ray.Backend.bind(cs.pbr_precompute.brdf_lut, 8)
 
-    upload_uniform(cs.shader, "u_Material", cs.material)
     for (i, light) in enumerate(cs.lights)
         Ray.Backend.upload_uniform(cs.shader, "u_LightPos[$(i - 1)]", light.position)
         Ray.Backend.upload_uniform(cs.shader, "u_LightColors[$(i - 1)]", light.color)
     end
 
-    Ray.submit(cs.shader, cs.sphere)
+    for (i, material) in enumerate(cs.materials)
+        upload_uniform(cs.shader, "u_Material", material)
+        Ray.submit(cs.shader, cs.sphere, Ray.translation(2 * i - 1, 0, 0))
+    end
 
     # Draw skybox.
     glDepthFunc(GL_LEQUAL)
     cs.skybox_shader |> Ray.Backend.bind
-    # cs.pbr_precompute.prefiltered |> Ray.Backend.bind
-    cs.pbr_precompute.environment |> Ray.Backend.bind
+    cs.pbr_precompute.prefiltered |> Ray.Backend.bind
+    # cs.pbr_precompute.environment |> Ray.Backend.bind
 
     Ray.Backend.upload_uniform(cs.skybox_shader, "u_EnvironmentMap", 0)
     Ray.Backend.upload_uniform(
