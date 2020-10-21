@@ -1,5 +1,6 @@
 module Ray
 
+import Assimp
 using GeometryBasics
 using LinearAlgebra
 using StaticArrays
@@ -34,7 +35,7 @@ using .PerspectiveCameraModule
 include("engine/core/Core.jl")
 include("engine/imgui/ImGUI.jl")
 
-using .Abstractions
+using .Abstractions: BufferElement, BufferLayout
 using .Transformations
 using .Event
 using .Input
@@ -43,6 +44,8 @@ using .ImGUI
 
 include("engine/renderer/Renderer.jl")
 include("engine/renderer/Renderer2D.jl")
+
+include("loader/model.jl")
 
 function get_assets_path()::String
     assets_path = joinpath(@__DIR__, "..", "assets")

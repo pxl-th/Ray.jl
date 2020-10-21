@@ -26,12 +26,30 @@ function Texture2D(
 end
 
 function Texture2D(
+    data, width::Integer, height::Integer, type::UInt32 = GL_UNSIGNED_BYTE;
+    internal_format::UInt32 = GL_RGBA8, data_format::UInt32 = GL_RGBA,
+    kwargs...,
+)
+    id = @ref glGenTextures(1, RepUInt32)
+    glBindTexture(GL_TEXTURE_2D, id)
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, internal_format,
+        width, height, 0, data_format, type, data,
+    )
+
+    _set_texture_parameters(;kwargs...)
+    Texture2D(id, width, height, "", internal_format, data_format, type)
+end
+
+function Texture2D(
     path::String, type::UInt32 = GL_UNSIGNED_BYTE;
     internal_format::Union{Nothing, UInt32} = nothing,
     data_format::Union{Nothing, UInt32} = nothing,
+    flip::Bool = true,
     kwargs...,
 )
-    data, width, height, pixel_type = load_image(path, true)
+    data, width, height, pixel_type = load_image(path, flip)
+    @info "Texture $(typeof(data)) @ $path"
 
     if internal_format ≡ nothing
         if length(pixel_type) == 3
