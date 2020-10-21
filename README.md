@@ -4,13 +4,15 @@ Simple rendering engine (no ray-tracing pun intended).
 
 ## PBR demo
 
+Demo of a [model](https://sketchfab.com/3d-models/mando-helmet-9da2e7fc67de443e95e190fc0c29f0c7) using built-in model loader.
+
+<img src="https://raw.githubusercontent.com/pxl-th/Ray.jl/master/res/helmet.gif" width=460>
+
+Demo of different materials.
+
 <img src="https://raw.githubusercontent.com/pxl-th/Ray.jl/master/res/pbr-simple-demo.png" width=460>
 
-To run demo execute following command:
-
-```bash
-julia --project=. sandbox/pbr/sandbox3d.jl
-```
+Code for the demo can be found in [sandbox/pbr/sandbox3d.jl](https://github.com/pxl-th/Ray.jl/blob/master/sandbox/pbr/sandbox3d.jl).
 
 ## 2D demo
 
